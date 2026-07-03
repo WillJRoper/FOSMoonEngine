@@ -23,14 +23,9 @@
 - text: All simulations performed with SWIFT
   url: https://swift.strw.leidenuniv.nl/
 
-- text: Forward modelling done with Synthesizer
-  url: https://synthesizer-project.github.io/synthesizer/#
+- text: 'Simulations performed by Jacob Kegerreis, Ella Buxton, Harrison Davies, Vince Eke, Callum Mosley'
 
-- text: 'Moon formation simulations by Jacob Kegerreis, Ella Buxton, Harrison Davies, Vince Eke, Callum Mosley'
-
-- text: 'Galaxy formation simulations by Kyle Oman, Diego Dado, Isabel Santos, James Trayford, Owen Jessop, Will Roper, + The COLIBRE Team'
-
-- text: 'Large scale structure simulations by Will Roper, Daniele Sorini, Isabel Santos, Owen Jessop, Sarah Johnston, + The FLAMINGO Team'
+- text: 'Renders and visualisations produced by Jacob Kegerreis and Harrison Davies'
 
 - text: Supercomputer
   header: true
@@ -47,14 +42,8 @@
 - text: Institute for Computational Cosmology, Durham University
   url: https://www.icc.dur.ac.uk/
 
-- text: Durham Centre for Extragalactic Astronomy (CEA)
-  url: https://www.dur.ac.uk/research/directory/research-centres/cea/
-
 - text: Imperial College London
   url: https://www.imperial.ac.uk/
-
-- text: University of Portsmouth
-  url: https://www.port.ac.uk/
 
 - text: The Royal Society — Summer Science Exhibition 2026
   url: https://royalsociety.org/
@@ -62,30 +51,16 @@
 - text: Image Credits
   header: true
 
-- text: 'Milky Way: ESO / S. Brunier'
-  url: https://www.eso.org/
-
-- text: 'COLIBRE: The COLIBRE Team (Schaye et al. 2026)'
-  url: https://colibre.strw.leidenuniv.nl/team.html
-
-- text: 'FLAMINGO: The FLAMINGO Team (Schaye et al. 2023)'
-  url: https://flamingo.strw.leidenuniv.nl/team.html
-
 - text: 'Moon Formation: Jacob Kegerreis, NASA Ames'
   url: https://www.youtube.com/@jkeger_et_al
-
-- text: 'Large scale structure & cluster simulation: Stuart McAlpine'
 
 - text: Funding
   header: true
 
-- text: We would like to thank the Ogden Trust, the Royal Society, and Durham University for their generous funding that made this project possible.
+- text: We would like to thank the Goodwood FOS Future Lab, the Ogden Trust, the Royal Society, and Durham University for their generous funding that made this project possible.
 
 - text: Licensing
   header: true
 
 - text: MoonEngine is released under the GNU General Public License v3.0
   url: https://www.gnu.org/licenses/gpl-3.0.en.html
-
-- text: COLIBRE and FLAMINGO content is licensed under CC BY 4.0
-  url: https://creativecommons.org/licenses/by/4.0/
