@@ -33,5 +33,3 @@ planetary:
       icon: icon_temperature
       audio: false
       description: See how hot a planet gets when shocked and rocked by a giant impact, with a cut-away view of your impact simulation, and the material coloured to show the temperature.
-
-

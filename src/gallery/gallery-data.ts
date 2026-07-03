@@ -25,6 +25,9 @@ export interface GalleryNode {
   viewId?: string;
   views?: Record<string, string>;
   parameters: Record<string, number>;
+  q: number;
+  r: number;
+  revealOrder: number;
   x: number;
   y: number;
   width: number;
@@ -68,6 +71,9 @@ export function buildGalleryScene(
     viewId: run.viewId,
     views: run.views,
     parameters: { ...run.parameters },
+    q: layout[index].q,
+    r: layout[index].r,
+    revealOrder: index,
     x: layout[index].x - minX + STAGE_MARGIN,
     y: layout[index].y - minY + STAGE_MARGIN,
     width: HEX_WIDTH,

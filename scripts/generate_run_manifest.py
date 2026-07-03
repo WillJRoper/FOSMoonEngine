@@ -41,8 +41,6 @@ VIDEO_EXTENSIONS = frozenset({".mp4", ".webm", ".mov", ".mkv"})
 METADATA_EXTENSIONS = frozenset({".csv", ".yaml", ".yml", ".json", ".txt", ".html", ".wav"})
 
 STATIC_EXTENSIONS = frozenset({".png", ".jpg", ".jpeg", ".webp", ".svg"})
-HEX_POSITION_FILENAME = "hex_pos.yaml"
-
 # Filename patterns that should never be uploaded (debug artifacts, build-time
 # intermediate files, comparison grids not consumed by the frontend).
 _UPLOAD_SKIP_FILENAMES = frozenset(
@@ -281,9 +279,9 @@ def iter_local_run_dirs(sim_root: Path) -> list[Path]:
     """Return nested run directories below one simulation family root.
 
     A run directory is any directory that contains at least one animation video
-    somewhere under ``animations/``. This allows local assets to live under
-    quality buckets such as ``planetary/1080p/<run>/`` while keeping the
-    frontend manifest shape unchanged.
+    somewhere under ``animations/``. This allows local assets to be discovered
+    whether they live directly under the simulation root or inside nested
+    grouping directories.
     """
 
     run_dirs: list[Path] = []
@@ -339,7 +337,6 @@ def build_manifest_entry(
     live_data_path = run_dir / "live_data_table.csv"
     run_summary_yaml = run_dir / "run_summary.yaml"
     parameters_yaml = run_dir / "parameters.yaml"
-    hex_position_yaml = run_dir / HEX_POSITION_FILENAME
     audio_track = run_dir / "audio_track.wav"
 
     view_paths = {
@@ -367,10 +364,6 @@ def build_manifest_entry(
     thumbnail_path = find_gallery_thumbnail(run_dir)
     if thumbnail_path is not None:
         entry["thumbnailPath"] = path_builder(thumbnail_path)
-
-    gallery_hex = parse_gallery_hex_yaml(hex_position_yaml)
-    if gallery_hex is not None:
-        entry["galleryHex"] = gallery_hex
 
     return entry
 
@@ -452,7 +445,6 @@ def build_manifest_entry_from_r2(
     live_data_key = f"{run_root}live_data_table.csv"
     summary_key = f"{run_root}run_summary.yaml"
     parameter_key = f"{run_root}parameters.yaml"
-    hex_position_key = f"{run_root}{HEX_POSITION_FILENAME}"
     audio_key = f"{run_root}audio_track.wav"
 
     view_paths = {
@@ -486,59 +478,7 @@ def build_manifest_entry_from_r2(
     if audio_key in object_keys:
         entry["audioPath"] = to_manifest_asset_path(object_prefix, audio_key)
 
-    if hex_position_key in object_keys:
-        try:
-            response = s3.get_object(
-                Bucket=bucket,
-                Key=to_r2_object_key(object_prefix, hex_position_key),
-            )
-            payload = response["Body"].read().decode("utf-8")
-            gallery_hex = parse_gallery_hex_payload(payload)
-            if gallery_hex is not None:
-                entry["galleryHex"] = gallery_hex
-        except Exception:
-            pass
-
     return entry
-
-
-def parse_gallery_hex_yaml(path: Path) -> dict[str, int] | None:
-    """Read axial gallery coordinates from a local ``hex_pos.yaml`` file."""
-    if not path.exists():
-        return None
-
-    with path.open("r", encoding="utf-8") as handle:
-        return parse_gallery_hex_payload(handle.read())
-
-
-def parse_gallery_hex_payload(payload: str) -> dict[str, int] | None:
-    """Parse axial gallery coordinates from YAML content.
-
-    Accepts either:
-
-    ``q: -2`` / ``r: 1``
-
-    or:
-
-    ``galleryHex: { q: -2, r: 1 }``
-    """
-    raw: dict[str, Any] = yaml.safe_load(payload) or {}
-    if not isinstance(raw, dict):
-        return None
-
-    candidate = raw.get("galleryHex", raw)
-    if not isinstance(candidate, dict):
-        return None
-
-    q = candidate.get("q")
-    r = candidate.get("r")
-    if q is None or r is None:
-        return None
-
-    try:
-        return {"q": int(q), "r": int(r)}
-    except (TypeError, ValueError):
-        return None
 
 
 def parse_run_parameters(

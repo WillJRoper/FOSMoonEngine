@@ -13,6 +13,7 @@ export interface HexLayoutNode {
   r: number;
   x: number;
   y: number;
+  revealOrder: number;
 }
 
 /** Convert axial coordinates into flat-top hex pixel positions. */
@@ -49,8 +50,45 @@ export function buildHexLayout(
       r: resolvedCoordinate.r,
       x: pixel.x,
       y: pixel.y,
+      revealOrder: getSpiralOrder(resolvedCoordinate),
     };
   });
+}
+
+function getSpiralOrder(coordinate: GalleryHexCoordinate): number {
+  const radius = Math.max(
+    Math.abs(coordinate.q),
+    Math.abs(coordinate.r),
+    Math.abs(-coordinate.q - coordinate.r),
+  );
+
+  if (radius === 0) {
+    return 0;
+  }
+
+  let order = 1 + 3 * (radius - 1) * radius;
+  let cursor = { q: 0, r: -radius };
+  const directions: GalleryHexCoordinate[] = [
+    { q: 0, r: 1 },
+    { q: 1, r: 0 },
+    { q: 1, r: -1 },
+    { q: 0, r: -1 },
+    { q: -1, r: 0 },
+    { q: -1, r: 1 },
+  ];
+
+  for (const direction of directions) {
+    for (let step = 0; step < radius; step += 1) {
+      if (cursor.q === coordinate.q && cursor.r === coordinate.r) {
+        return order;
+      }
+
+      order += 1;
+      cursor = addCoordinates(cursor, direction);
+    }
+  }
+
+  return order;
 }
 
 function getNextFallbackCoordinate(
@@ -74,16 +112,16 @@ function* createSpiralCoordinateGenerator(): Generator<GalleryHexCoordinate> {
   yield { q: 0, r: 0 };
 
   const directions: GalleryHexCoordinate[] = [
+    { q: 0, r: 1 },
     { q: 1, r: 0 },
     { q: 1, r: -1 },
     { q: 0, r: -1 },
     { q: -1, r: 0 },
     { q: -1, r: 1 },
-    { q: 0, r: 1 },
   ];
 
   for (let radius = 1; ; radius += 1) {
-    let coordinate = scaleCoordinate(directions[4], radius);
+    let coordinate = { q: 0, r: -radius };
 
     for (const direction of directions) {
       for (let step = 0; step < radius; step += 1) {
@@ -101,16 +139,6 @@ function addCoordinates(
   return {
     q: left.q + right.q,
     r: left.r + right.r,
-  };
-}
-
-function scaleCoordinate(
-  coordinate: GalleryHexCoordinate,
-  factor: number,
-): GalleryHexCoordinate {
-  return {
-    q: coordinate.q * factor,
-    r: coordinate.r * factor,
   };
 }
 

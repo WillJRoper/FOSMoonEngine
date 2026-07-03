@@ -11,6 +11,8 @@ import { withBaseUrl } from '../shared/urls.ts';
 import { getVideoMetadataUrl } from './video-run-metadata.ts';
 import type { ManifestSource } from '../shared/advanced-settings.ts';
 import { logInfo, logWarn } from '../shared/logger.ts';
+import { fetchWithOnlineAssetFallback } from '../shared/online-assets.ts';
+import { parse } from 'yaml';
 
 export interface VideoMatch {
   url: string;
@@ -49,7 +51,6 @@ interface RunManifestEntry {
   parameters?: Record<string, number>;
   label?: string;
   thumbnailPath?: string;
-  galleryHex?: GalleryHexCoordinate;
   liveDataPath: string;
   summaryPath: string;
   audioPath?: string;
@@ -155,13 +156,18 @@ async function listManifestRuns(
 ): Promise<GalleryManifestRun[]> {
   const manifest = await manifestPromise;
 
-  return manifest.runs
-    .filter((entry) => entry.simulationId === simClassId)
-    .map(toGalleryManifestRun)
-    .filter((run): run is GalleryManifestRun => run !== null);
+  const runs = await Promise.all(
+    manifest.runs
+      .filter((entry) => entry.simulationId === simClassId)
+      .map(toGalleryManifestRun),
+  );
+
+  return runs.filter((run): run is GalleryManifestRun => run !== null);
 }
 
-function toGalleryManifestRun(entry: RunManifestEntry): GalleryManifestRun | null {
+async function toGalleryManifestRun(
+  entry: RunManifestEntry,
+): Promise<GalleryManifestRun | null> {
   const viewId = entry.defaultView ?? Object.keys(entry.views)[0];
   const videoPath = bestEffortViewPath(entry.views, viewId);
 
@@ -169,10 +175,12 @@ function toGalleryManifestRun(entry: RunManifestEntry): GalleryManifestRun | nul
     return null;
   }
 
+  const summaryUrl = withBaseUrl(entry.summaryPath);
+
   return {
     url: withBaseUrl(videoPath),
     liveDataUrl: withBaseUrl(entry.liveDataPath),
-    summaryUrl: withBaseUrl(entry.summaryPath),
+    summaryUrl,
     audioUrl: entry.audioPath ? withBaseUrl(entry.audioPath) : undefined,
     viewId,
     runId: entry.runId,
@@ -180,11 +188,48 @@ function toGalleryManifestRun(entry: RunManifestEntry): GalleryManifestRun | nul
     label: entry.label ?? entry.runId,
     parameters: { ...(entry.parameters ?? {}) },
     thumbnailUrl: entry.thumbnailPath ? withBaseUrl(entry.thumbnailPath) : null,
-    galleryHex: entry.galleryHex ?? null,
+    galleryHex: await loadRunGalleryHex(summaryUrl),
     views: Object.fromEntries(
       Object.entries(entry.views).map(([key, path]) => [key, withBaseUrl(path)]),
     ),
   };
+}
+
+async function loadRunGalleryHex(summaryUrl: string): Promise<GalleryHexCoordinate | null> {
+  try {
+    const response = await fetchWithOnlineAssetFallback(getRunGalleryHexUrl(summaryUrl));
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const raw = parse(await response.text()) as Record<string, unknown>;
+    const candidate =
+      raw && typeof raw === 'object' && 'galleryHex' in raw
+        ? raw.galleryHex
+        : raw;
+
+    if (!candidate || typeof candidate !== 'object') {
+      return null;
+    }
+
+    const q = toFiniteInteger((candidate as Record<string, unknown>).q);
+    const r = toFiniteInteger((candidate as Record<string, unknown>).r);
+
+    return q === null || r === null ? null : { q, r };
+  } catch {
+    return null;
+  }
+}
+
+function getRunGalleryHexUrl(summaryUrl: string): string {
+  return summaryUrl.replace(/run_summary\.yaml($|\?)/, 'hex_pos.yaml$1');
+}
+
+function toFiniteInteger(value: unknown): number | null {
+  const numeric = typeof value === 'number' ? value : Number(value);
+
+  return Number.isInteger(numeric) ? numeric : null;
 }
 
 /**

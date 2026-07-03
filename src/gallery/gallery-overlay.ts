@@ -15,6 +15,7 @@ const VIEWPORT_PADDING = 48;
 const CLICK_DRAG_THRESHOLD_PX = 8;
 const WHEEL_ZOOM_IN_FACTOR = 1.05;
 const WHEEL_ZOOM_OUT_FACTOR = 0.96;
+const NODE_REVEAL_STAGGER_MS = 16;
 
 interface PointerSample {
   x: number;
@@ -105,6 +106,8 @@ export function createGalleryOverlay(
   let pinchStartScale = INITIAL_SCALE;
   let pinchStartWorldX = 0;
   let pinchStartWorldY = 0;
+  let renderVersion = 0;
+  let hasPlayedInitialReveal = false;
   const activePointers = new Map<number, PointerSample>();
 
   closeButton.addEventListener('click', () => options.onClose());
@@ -249,7 +252,18 @@ export function createGalleryOverlay(
   };
 
   function renderNodes(): void {
+    const nextRenderVersion = renderVersion + 1;
+    const shouldAnimateReveal = !hasPlayedInitialReveal;
+
+    renderVersion = nextRenderVersion;
     stage.innerHTML = '';
+
+    if (currentScene.nodes.length === 0) {
+      return;
+    }
+
+    const buttons: Array<{ element: HTMLButtonElement; revealOrder: number }> = [];
+    const imageLoads: Array<Promise<void>> = [];
 
     for (const node of currentScene.nodes) {
       const button = document.createElement('button');
@@ -263,6 +277,7 @@ export function createGalleryOverlay(
       button.style.width = `${node.width}px`;
       button.style.height = `${node.height}px`;
       button.dataset.runId = node.runId;
+      button.classList.toggle('is-pending', shouldAnimateReveal);
       button.classList.toggle('is-lit', currentLitRunIds.has(node.runId));
       button.setAttribute(
         'aria-label',
@@ -276,11 +291,52 @@ export function createGalleryOverlay(
       image.alt = '';
       image.decoding = 'async';
       image.draggable = false;
+      imageLoads.push(waitForImage(image));
 
       media.appendChild(image);
       button.appendChild(media);
       stage.appendChild(button);
+      buttons.push({ element: button, revealOrder: node.revealOrder });
     }
+
+    if (!shouldAnimateReveal) {
+      return;
+    }
+
+    void Promise.allSettled(imageLoads).then(() => {
+      if (renderVersion !== nextRenderVersion) {
+        return;
+      }
+
+      hasPlayedInitialReveal = true;
+
+      for (const { element, revealOrder } of buttons) {
+        window.setTimeout(() => {
+          if (renderVersion !== nextRenderVersion || !element.isConnected) {
+            return;
+          }
+
+          element.classList.add('is-visible');
+        }, revealOrder * NODE_REVEAL_STAGGER_MS);
+      }
+    });
+  }
+
+  function waitForImage(image: HTMLImageElement): Promise<void> {
+    if (image.complete) {
+      return Promise.resolve();
+    }
+
+    return new Promise((resolve) => {
+      const finish = () => {
+        image.removeEventListener('load', finish);
+        image.removeEventListener('error', finish);
+        resolve();
+      };
+
+      image.addEventListener('load', finish, { once: true });
+      image.addEventListener('error', finish, { once: true });
+    });
   }
 
   function resetView(): void {

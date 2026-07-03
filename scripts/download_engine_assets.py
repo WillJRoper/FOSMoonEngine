@@ -225,6 +225,18 @@ def collect_downloads(
                 )
             )
 
+        hex_pos_url = derive_hex_pos_url(entry.get("summaryPath", ""))
+        if hex_pos_url:
+            tasks.append(
+                build_download_task(
+                    entry=entry,
+                    url=resolve_asset_url(hex_pos_url, primary_base),
+                    backup_url=resolve_asset_url(hex_pos_url, backup_base),
+                    dest=base / "hex_pos.yaml",
+                    asset_kind="hex-position",
+                )
+            )
+
         # ── optional audio track ────────────────────────────────────────
         audio_url = entry.get("audioPath")
         if audio_url:
@@ -275,6 +287,13 @@ def derive_params_url(summary_path: str) -> str:
         return ""
 
     return summary_path.replace("run_summary.yaml", "parameters.yaml")
+
+
+def derive_hex_pos_url(summary_path: str) -> str:
+    if not isinstance(summary_path, str) or not summary_path:
+        return ""
+
+    return summary_path.replace("run_summary.yaml", "hex_pos.yaml")
 
 
 def format_size(num_bytes: int) -> str:

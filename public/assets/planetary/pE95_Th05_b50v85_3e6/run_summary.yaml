@@ -1,0 +1,36 @@
+wallclockSeconds: 325728.0
+computeUsed: 2534.0
+memoryUsed: 10.3
+carbonBurnt: 0.32
+particlesUpdated: 1.295699676e+11
+summaryMetrics:
+  moon_mass:
+    label: Moon-forming mass
+    value: '0.02207'
+  moon_mass_bar:
+    label: Moon-forming mass
+    value: '0.1485'
+  earth_mass:
+    label: Planet mass
+    value: '0.9961'
+  earth_mass_bar:
+    label: Planet mass
+    value: '0.9961'
+  spin:
+    label: Spin of Earth–Moon system
+    value: '0.4446'
+  spin_bar:
+    label: Spin of Earth–Moon system
+    value: '0.4446'
+  moon_iron:
+    label: Moon iron
+    value: '0.02812'
+  proto_earth_in_moon:
+    label: Proto-Earth in Moon
+    value: '0.3861'
+  similarity_score:
+    label: Similarity Score
+    value: '53'
+  likelihood:
+    label: Scenario likelihood
+    value: 'Warning'
