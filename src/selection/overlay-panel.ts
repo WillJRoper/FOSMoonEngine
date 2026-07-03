@@ -436,8 +436,8 @@ export function createOverlayPanel(
         'Change the interface theme and manage exhibit-level options for this installation.';
       mediaSubtitle.textContent = '';
       mediaSubtitle.hidden = true;
-      mediaImage.src = withBaseUrl('assets/Cluster_Stuart.webp');
-      mediaImage.alt = 'Galaxy cluster simulation preview';
+      mediaImage.src = withBaseUrl('assets/7-kegerreis-1.webp');
+      mediaImage.alt = 'Moon impact simulation preview';
     } else {
       titleEyebrow.textContent = 'References';
       titleText.textContent = 'Project Sources And Attribution';
@@ -445,8 +445,8 @@ export function createOverlayPanel(
         'Review the datasets, imagery, and supporting materials behind this experience.';
       mediaSubtitle.textContent = '';
       mediaSubtitle.hidden = true;
-      mediaImage.src = withBaseUrl('assets/synthetic_hst_pretty_galaxy.webp');
-      mediaImage.alt = 'Synthetic image preview';
+      mediaImage.src = withBaseUrl('assets/jupiter-remix-credits.webp');
+      mediaImage.alt = 'Moon impact simulation preview';
     }
 
     if (view === 'settings') {

@@ -1,4 +1,5 @@
 import { withBaseUrl } from '../shared/urls.ts';
+import { ABOUT_CONTENT } from './about-content.ts';
 
 export interface EntryInfoOverlayController {
   infoButton: HTMLButtonElement;
@@ -8,7 +9,10 @@ export interface EntryInfoOverlayController {
 }
 
 export function createEntryInfoOverlay(): EntryInfoOverlayController {
-  const aboutImageSrc = withBaseUrl('assets/2-McAlpine.webp');
+  const aboutImageSrc = withBaseUrl(ABOUT_CONTENT.imageSrc);
+  const bodyMarkup = ABOUT_CONTENT.body
+    .map((copy) => `<p class="entry-info-modal__copy">${copy}</p>`)
+    .join('');
 
   const infoModal = document.createElement('div');
   const infoButton = document.createElement('button');
@@ -33,39 +37,19 @@ export function createEntryInfoOverlay(): EntryInfoOverlayController {
             decoding="async"
           />
           <div class="entry-info-modal__media-copy">
-            <p class="entry-info-modal__eyebrow">FOS Moon Engine</p>
-            <h2 class="entry-info-modal__headline">Explore Cosmic Collisions On Human Scales</h2>
+            <p class="entry-info-modal__eyebrow">${ABOUT_CONTENT.mediaEyebrow}</p>
+            <h2 class="entry-info-modal__headline">${ABOUT_CONTENT.mediaHeadline}</h2>
           </div>
         </div>
         <div class="entry-info-modal__content">
           <div class="entry-info-modal__header">
-            <p class="entry-info-modal__eyebrow">About</p>
-            <h2 class="entry-info-modal__title">What Is This Experience?</h2>
-            <p class="entry-info-modal__subtitle">
-              FOS Moon Engine turns large scientific simulations into an interactive hands-on experience
-            </p>
+            <p class="entry-info-modal__eyebrow">${ABOUT_CONTENT.headerEyebrow}</p>
+            <h2 class="entry-info-modal__title">${ABOUT_CONTENT.title}</h2>
+            <p class="entry-info-modal__subtitle">${ABOUT_CONTENT.subtitle}</p>
           </div>
           <div class="entry-info-modal__body">
             <section class="entry-info-modal__section">
-              <p class="entry-info-modal__copy">
-                Choose your impact parameters, select your inputs, and see how those decisions reshape a planet.
-              </p>
-              <p class="entry-info-modal__copy">
-                Run your own simulations of proto-planetary impacts and compare your choices with real scientific targets.
-              </p>
-            </section>
-            <section class="entry-info-modal__section">
-              <h3 class="entry-info-modal__section-title">Planetary Scale</h3>
-              <div class="entry-info-modal__theme-list">
-                <div class="entry-info-modal__theme">
-                  <p class="entry-info-modal__theme-title">Planetary</p>
-                  <p class="entry-info-modal__copy">
-                    Even the smallest changes in angle, speed, or mass can completely transform how a giant
-                    impact unfolds. See if you can find the right combination to form a Moon like ours, and uncover
-                    the hidden interplay between the initial conditions that turns planetary chaos into an Earth–Moon system.
-                  </p>
-                </div>
-              </div>
+              ${bodyMarkup}
             </section>
           </div>
         </div>
