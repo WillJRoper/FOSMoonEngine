@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Editor / OS
+.DS_Store
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Python
+__pycache__/
+*.pyc
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Local tracking
+PROGRESS.md
+local_tracking.db
+
+# Wrangler / Cloudflare Workers
+.wrangler/
+worker-configuration.d.ts
+
+# Local test artifacts
+test*.mp4
+test_*.csv
+
+# Ignore all videos we don't want to track them
+**/*.mp4
+public/assests/*.mp4
+
+# Plot outputs
+plots/
