@@ -1,0 +1,37 @@
+# Parameter definitions for each simulation family.
+#
+# Each top-level key is a simulation family. Parameters are keyed by id
+# and define the range, step, and display formatting used by the
+# parameter editor sliders in the selection overlay.
+#
+# Slider starting values are randomized in app code rather than authored here.
+#
+# `description` fields appear in a popover when the user clicks the info
+# button next to a parameter name.
+
+planetary:
+  impactor_mass:
+    label: Impactor Mass
+    description: How big was the object that smashed into the young Earth?  A more massive impactor could spray out more debris — and perhaps result in a bigger Moon.
+    unit: Earth masses
+    min: 0.01
+    max: 0.35
+    step: 0.01
+    primary: false
+  impactor_velocity:
+    label: Impact Speed
+    description: How fast was the impactor traveling when it hit?  Faster collisions are more violent, ejecting more and hotter debris.
+    unit: km/s
+    min: 6.7
+    max: 31
+    step: 0.1
+    primary: false
+  impactor_angle:
+    label: Impact Angle
+    description: Was the impact head-on, or grazing at a high angle?  A direct hit blasts material straight out, while a sideswipe can spray the debris out into a disk, or even escape as a hit and run.
+    unit: °
+    min: 0
+    max: 65
+    step: 1
+    primary: true
+

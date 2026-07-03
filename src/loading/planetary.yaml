@@ -1,0 +1,36 @@
+# Initialization terminal script for the Planetary simulation family.
+#
+# Each entry is a single line that may be selected randomly at runtime.
+
+- 'INIT_EARTH :: loading continental crusts and oceanic crusts into memory'
+- 'INIT_EARTH :: making the Earth soft centred like a very hot chocolate truffle'
+- 'INIT_EARTH :: checking that the mantle is molten enough to be dramatic'
+- 'INIT_EARTH :: minding its own business'
+- 'INIT_EARTH :: winning the goldilocks zone lottery'
+- 'INIT_EARTH :: expressing equations of state in a way that makes sense to the computer'
+- 'INIT_IMPACTOR :: selecting one large rock with terrible intentions'
+- 'INIT_IMPACTOR :: solving for a collision nobody involved will enjoy'
+- 'INIT_IMPACTOR :: setting up proto-planet pinball'
+- 'INIT_IMPACTOR :: checking if catastrophic failure counts as satellite formation'
+- 'INIT_IMPACTOR :: sending Bruce Willis and a really big bomb to the rescue'
+- 'INIT_MATERIAL :: solving problems in multi-material simulations just to slam things together'
+- 'INIT_MATERIAL :: preparing to mix iron, rock, and magma in a planetary cocktail'
+- 'INIT_ORBIT :: aligning the crosshairs with Earth'
+- "INIT_ORBIT :: emulating Moonfall, Hollywood's finest achievement"
+- 'INIT_ORBIT :: turning orbital mechanics into a countdown to regret'
+- 'INIT_ORBIT :: checking that all trajectories intersect in the least peaceful way possible'
+- 'INIT_ORBIT :: playing the best crossover album ever, Collision Course'
+- 'PREPARE_COMP :: filling RAM to the brim'
+- 'PREPARE_COMP :: funding a bigger supercomputer'
+- 'PREPARE_COMP :: making computer go brrr'
+- 'PREPARE_COMP :: solving the three-body problem (ish)'
+- 'PREPARE_COMP :: optimising for oddly specific hardware configurations that may not exist in 2 years'
+- 'PREPARE_COMP :: asking the AI overlords to stop using our hardware for cryptocurrency mining'
+- 'PREPARE_COMP :: spending bitcoin before the bubble bursts'
+- 'VISUAL_PIPELINE :: how liquid should planets be really?'
+- "VISUAL_PIPELINE :: taking artistic license with Earth's surface"
+- 'VISUAL_PIPELINE :: making sure the impact looks suitably apocalyptic'
+- 'VISUAL_PIPELINE :: colour-grading the magma to something tasteful'
+- 'VISUAL_PIPELINE :: rendering one heroic plume of molten bad decisions'
+- 'VISUAL_PIPELINE :: making planetary destruction look oddly publication-ready'
+- 'INIT_FUNDING :: trying to secure future funding for the sciences while funding gets cut'

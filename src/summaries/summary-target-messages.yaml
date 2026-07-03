@@ -1,0 +1,29 @@
+# Target messages for scientific bar detail popups, shown when a bar is tapped.
+# Each section is a simulation family (theme).
+# Each entry maps situation keys (greenLow, greenHigh, amberLow, amberHigh,
+# redLow, redHigh) to descriptive message text.
+# Entries are keyed by stable result ids so authored copy survives label tweaks.
+
+planetary:
+  moon_mass:
+    greenLow: Spot on!  Your moon — or the moon that could grow out of your orbiting debris disk — came out just a fraction lighter than our real one.
+    greenHigh: Spot on!  Your moon — or the moon that could grow out of your orbiting debris disk — came out just a fraction heavier than our real one.
+    amberLow: A bit light.  Slightly too little material made it into orbit, or with not enough spin ("angular momentum"), so this impact would make a moon a bit smaller than ours.
+    amberHigh: A bit heavy.  A lot of material made it into orbit, so this impact would make a moon even bigger than ours.
+    redLow: Very light.  Not much material made it into orbit — this impact would make a moon much smaller than ours, or maybe no moon at all.
+    redHigh: That's a big moon!  So much material was flung into orbit that this impact would make a moon far larger than ours.
+  earth_mass:
+    greenLow: Spot on.  The planet ended up a fraction lighter than our Earth — well within range.
+    greenHigh: Spot on.  The planet ended up a fraction heavier than our Earth — well within range.
+    amberLow: A bit light.  A little too much was lost in the collision, leaving Earth slightly underweight.
+    amberHigh: A bit heavy.  A little too much material merged with the planet, leaving Earth slightly overweight.
+    redLow: Far too light.  This impact stripped away too much material, or not enough material was added, leaving a planet far smaller than our Earth.
+    redHigh: Far too heavy.  Lots of material was added with very little removed, so this planet ends up far more massive than our Earth.
+  spin:
+    greenLow: Spot on.  The system "angular momentum" is slightly lower than the real one — well within range.
+    greenHigh: Spot on.  The system "angular momentum" is slightly higher than the real one — well within range.
+    amberLow: A bit low.  This planet is spinning a bit slowly, or not enough material is flying around in orbit to evolve into the system we see today.
+    amberHigh: A bit high.  This planet is spinning a bit fast, or too much material is flying around in orbit to match the system we see today.
+    redLow: Far too low.  This impact gave the planet hardly any spin, with not much material in orbit — unlike our fairly fast-spinning and high-orbiting early Earth and Moon.
+    redHigh: Far too high.  This impact drove the planet to spin super fast, with massive amounts of material flying around in orbit.
+

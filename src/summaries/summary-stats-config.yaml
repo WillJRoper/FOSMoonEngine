@@ -1,0 +1,94 @@
+# Summary overlay display configuration for each simulation family.
+#
+# Each family has four config blocks:
+#   resources       — cards shown in the "Resources Used" section
+#   results         — bars shown in the "Similarity Results" section
+#   simulationStats — cards shown in the "Simulation Stats" section
+#   similarityScore — fallback score display when no scientific bars exist
+#
+# Stat fields:
+#   id             — built-in metric key or key in the run's run_summary.yaml
+#                    summaryMetrics map
+#   label          — override for the card title (falls back to metric label)
+#   value          — fallback display value (shown when the metric is missing;
+#                    use -- to make absent data obvious)
+#   unit           — appended after the formatted value
+#   description    — explanatory text shown in a tap-to-open overlay
+#   target         — reference value used by result bars for similarity scoring
+#   value_scale    — multiply numeric values before formatting for display
+#   display_format — `integer`, `float`, or `scientific`
+#   precision      — decimal places (float mode only; ignored by compact/scientific)
+
+planetary:
+  resources:
+    - &resource_runtime
+      id: runtime
+      value: '--'
+      unit: hours
+      display_format: float
+      precision: 2
+      description: How long the simulation took to run.  Calculating how everything moves and affects each other takes a lot of work, even for a supercomputer!
+    - &resource_carbon_burnt
+      id: carbonBurnt
+      value: '--'
+      unit: kg CO₂
+      display_format: float
+      precision: 2
+      description: The estimated carbon footprint of this run.  Carbon dioxide is a major driver of climate change, and supercomputer-driven research at this scale has real environmental costs that must be considered when we plan our research. For context, driving the average car for 100 miles produces roughly 40 kg of CO₂, and the average transatlantic flight produces roughly 1,000 kg of CO₂ per passenger.
+    - &resource_compute_used
+      id: computeUsed
+      value: '--'
+      description: How much computing time and memory the simulation needed to crunch all that physics. A CPU-hour is one hour of work for a single CPU core, 2 CPU cores working for 2 hours would be 4 CPU-hours. With a supercomputer you can have thousands or tens of thousands of CPU cores working together, so a simulation can take a few hours to run but use tens of thousands of CPU-hours to do it.
+  results:
+    - id: moon_mass
+      label: Moon-forming mass
+      target: 1.0
+      value: '--'
+      unit: Lunar masses
+      display_format: float
+      precision: 2
+      description: How big a moon was formed or could later form by growing out of orbiting debris.
+    - id: earth_mass
+      label: Planet mass
+      target: 1.0
+      value: '--'
+      unit: Earth masses
+      display_format: float
+      precision: 2
+      description: How big the planet ended up after the impact.
+    - id: spin
+      label: System spin
+      target: 1.0
+      value: '--'
+      unit: Earth—Moon system
+      display_format: float
+      precision: 3
+      description: The combined 'angular momentum' of the spinning planet and anything in orbit, compared with the real system (3.4×10³⁴ kg m² / s).
+  simulationStats:
+    - id: similarityScore
+      label: Similarity score
+      value: '--'
+      description: How similar the planet—moon system after this impact would be to ours overall.
+    - id: moon_iron_percent
+      label: Moon-forming iron
+      value: '--'
+      unit: '%'
+      display_format: float
+      precision: 1
+      description: The fraction of the moon-forming material that is iron.  Our Moon is mostly rock with a very small iron core, around 2% of its mass.  Typical rocky planets like Earth are around 30% core and 70% mantle.
+    - id: proto_earth_in_moon_percent
+      label: Moon-forming proto-Earth
+      value: '--'
+      unit: '%'
+      display_format: float
+      precision: 1
+      description: What fraction of the moon-forming material came from the proto-Earth target rather than the impactor? Analysis of Moon and Earth rocks shows their makeup is very similar, but most impact scenarios struggle to mix together enough material to immediately explain this.
+    - id: likelihood
+      label: Scenario likelihood
+      value: '--'
+      unit: ''
+      display_format: string
+      description: We only have one Moon like ours to study, and it's possible that its formation wasn't very likely!  However, impacts at very low or high angles, or very high speeds, are less likely.  Impacts at very low speeds might not even be possible in reality without something mysterious to slow down the impactor, but that doesn't stop us from simulating what could happen if it did.
+  similarityScore:
+    value: '--'
+

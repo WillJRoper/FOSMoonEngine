@@ -1,0 +1,37 @@
+# Simulation family catalog source-of-truth.
+#
+# Each top-level key is one simulation family shown in the UI.
+# Parameter definitions live in `parameter-info.yaml`.
+# Display stat configuration lives in `summary-stats-config.yaml`.
+#
+# `views`
+#   Optional display-mode video tabs.
+#   - `id` must match a view key in the generated run manifest
+#   - `label` renders text in the switcher
+#   - `icon` can be used instead of text when a theme wants glyph-first tabs
+
+planetary:
+  label: Planetary
+  placeholderImage: assets/planetary-parameter-overlay.webp
+  parameterSubtitle: Set up your collision scenario to explore how varied the outcomes of giant impacts can be.  What parameters lead to the formation of a Moon like ours, a debris disk from which it could grow, or something dramatically different?
+  views:
+    - id: houdini
+      label: Cinematic render
+      icon: icon_houdini
+      audio: false
+      description: |-
+        View the data of your simulated impact, rendered in 3D, as rock and iron get pushed and shocked by immense pressure, and pulled and disrupted by strong gravity.
+
+        The colour, glow, and opacity of the visualised material are set directly by the simulation data.  Although, if we could see a real impact this close up, there would be a lot more thick dust making it harder to see than what is shown here.
+    - id: material
+      label: Material
+      icon: icon_material
+      audio: false
+      description: See how materials mix at this planetary scale, with a cut-away view of your impact simulation.  The material is coloured to show the target-planet's metal core in purple, its rocky mantle in orange, the impactor's core in blue, and its mantle in yellow.
+    - id: temperature
+      label: Temperature
+      icon: icon_temperature
+      audio: false
+      description: See how hot a planet gets when shocked and rocked by a giant impact, with a cut-away view of your impact simulation, and the material coloured to show the temperature.
+
+

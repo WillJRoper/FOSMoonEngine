@@ -1,0 +1,44 @@
+# Live telemetry HUD display configuration for each simulation family.
+#
+# - `value` is the initial/fallback display value
+# - `unit` is appended by the app
+# - `live: true` means a CSV stream should provide updates
+# - `live_key` can override which CSV column should be used
+# - `from_video: true` means the final value should be pulled from the active
+#   video's sidecar metadata YAML
+# - `video_key` can override which metadata key should be used
+# - `scale_with_time: true` (when `live`) scales the final metadata value
+#   linearly by normalized playback time
+# - `value_scale` multiplies a live numeric value before formatting
+
+planetary:
+  liveStats:
+    - id: impactor_mass
+      value: '0.10'
+      unit: Earth masses
+      live: false
+      precision: 2
+    - id: impactor_velocity
+      value: '12.0'
+      unit: km/s
+      live: false
+      precision: 2
+    - id: impactor_angle
+      value: '45'
+      unit: °
+      live: false
+    - id: time
+      value: 0.0
+      unit: hours
+      label: Time
+      live: true
+      live_key: time_seconds
+      value_scale: 2.777777777777778e-4
+      precision: 2
+    - id: particlesUpdated
+      value: '0'
+      label: Particle updates
+      live: true
+      live_key: particlesUpdated
+      integer: true
+
