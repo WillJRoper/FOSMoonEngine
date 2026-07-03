@@ -45,7 +45,7 @@ export interface ViewportController {
   showMedia: () => void;
 
   /** Seek by normalized fraction 0..1. */
-  seekToFraction: (fraction: number) => void;
+  seekToFraction: (fraction: number, options?: ViewportSeekOptions) => void;
 
   /** Reset playback back to the start. */
   resetPlayback: () => void;
@@ -112,6 +112,10 @@ export interface ViewportSourceOptions {
   seekFraction?: number;
   autoplay?: boolean;
   ownedObjectUrl?: boolean;
+}
+
+export interface ViewportSeekOptions {
+  approximate?: boolean;
 }
 
 /**
@@ -281,7 +285,7 @@ export function createViewport(
     video.classList.remove('is-empty');
   }
 
-  function seekToFraction(fraction: number): void {
+  function seekToFraction(fraction: number, options: ViewportSeekOptions = {}): void {
     if (!Number.isFinite(video.duration) || video.duration <= 0) {
       return;
     }
@@ -289,8 +293,15 @@ export function createViewport(
     // Clamp aggressively so scrubbing never asks the media element for a time
     // outside its real bounds.
     const clamped = Math.max(0, Math.min(1, fraction));
+    const nextTime = clamped * video.duration;
 
-    video.currentTime = clamped * video.duration;
+    if (options.approximate && typeof video.fastSeek === 'function') {
+      video.fastSeek(nextTime);
+
+      return;
+    }
+
+    video.currentTime = nextTime;
   }
 
   function resetPlayback(): void {

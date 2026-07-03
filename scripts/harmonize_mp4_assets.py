@@ -2,8 +2,8 @@
 """Harmonize MP4 assets for smoother browser playback and scrubbing.
 
 Recursively scans an asset tree for ``.mp4`` files, skips generated build
-directories such as ``dist/``, and converts non-compliant files to a common
-H.264 delivery profile.
+directories such as ``dist/``, and converts non-compliant files to a 4k-first
+H.264 delivery profile tuned for local scrubbing.
 """
 
 from __future__ import annotations
@@ -14,6 +14,7 @@ import os
 import shutil
 import signal
 import subprocess
+import sys
 import tempfile
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -23,9 +24,10 @@ from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 EXCLUDED_DIRECTORY_NAMES = frozenset({"dist", ".git", "__pycache__"})
-MAX_WIDTH = 1920
-MAX_HEIGHT = 1080
-GOP_DURATION_SECONDS = 0.6
+MAX_WIDTH = 3840
+MAX_HEIGHT = 2160
+GOP_DURATION_SECONDS = 0.2
+H264_LEVEL = 51
 STOP_EVENT = threading.Event()
 TEMP_PATHS: set[Path] = set()
 TEMP_PATHS_LOCK = threading.Lock()
@@ -140,8 +142,8 @@ def parse_args() -> CliOptions:
     parser.add_argument(
         "--crf",
         type=int,
-        default=23,
-        help="CRF quality value passed to libx264 (default: 23).",
+        default=18,
+        help="CRF quality value passed to libx264 (default: 18).",
     )
     parser.add_argument(
         "--preset",
@@ -447,7 +449,7 @@ def get_probe_issues(
         issues.append(f"codec={probe.codec_name}")
     if probe.profile != "High":
         issues.append(f"profile={probe.profile}")
-    if probe.level != 41:
+    if probe.level != H264_LEVEL:
         issues.append(f"level={probe.level}")
     if probe.pixel_format != "yuv420p":
         issues.append(f"pix_fmt={probe.pixel_format}")
@@ -502,7 +504,7 @@ def build_ffmpeg_command(
         "-profile:v",
         "high",
         "-level:v",
-        "4.1",
+        "5.1",
         "-pix_fmt",
         "yuv420p",
         "-preset",
@@ -730,6 +732,11 @@ def install_signal_handlers() -> None:
     signal.signal(signal.SIGINT, _handle_interrupt)
 
 
+def emit(message: str = "") -> None:
+    """Print a progress message immediately, even in buffered environments."""
+    print(message, flush=True)
+
+
 def main() -> None:
     """CLI entrypoint."""
     options = parse_args()
@@ -739,10 +746,13 @@ def main() -> None:
     scan = discover_mp4_files(options.assets_dir)
     summary = Summary(total_files=len(scan.files), symlinks_skipped=len(scan.symlinks))
 
-    print(f"Scanning assets: {options.assets_dir}")
-    print(f"Found {len(scan.files)} MP4 file(s)")
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(line_buffering=True, write_through=True)
+
+    emit(f"Scanning assets: {options.assets_dir}")
+    emit(f"Found {len(scan.files)} MP4 file(s)")
     for symlink in scan.symlinks:
-        print(f"[skip symlink] {symlink}")
+        emit(f"[skip symlink] {symlink}")
 
     work_items: list[tuple[int, Path]] = []
     run_dirs_by_file = {
@@ -767,25 +777,25 @@ def main() -> None:
                 summary.failed += 1
                 summary.failures.append(f"{path}: {exc}")
                 summary.broken_files.append(f"{path}: {exc}")
-                print(f"{prefix} failed {path}: {exc}")
+                emit(f"{prefix} failed {path}: {exc}")
                 continue
 
             working_run_dirs.add(run_dirs_by_file[path])
 
             if compliance.compliant and not options.force:
                 summary.compliant_skipped += 1
-                print(f"{prefix} compliant {path} ({format_size(size)})")
+                emit(f"{prefix} compliant {path} ({format_size(size)})")
                 continue
 
             if options.check:
                 if compliance.compliant:
                     summary.compliant_skipped += 1
-                    print(f"{prefix} compliant {path} ({format_size(size)})")
+                    emit(f"{prefix} compliant {path} ({format_size(size)})")
                 else:
                     summary.check_non_compliant += 1
                     summary.failed += 1
                     summary.failures.append(f"{path}: {'; '.join(compliance.issues)}")
-                    print(
+                    emit(
                         f"{prefix} non-compliant {path} ({format_size(size)}): "
                         f"{'; '.join(compliance.issues)}"
                     )
@@ -803,17 +813,19 @@ def main() -> None:
                     if compliance.compliant
                     else "; ".join(compliance.issues)
                 )
-                print(f"{prefix} {action} {path} ({format_size(size)}): {detail}")
+                emit(f"{prefix} {action} {path} ({format_size(size)}): {detail}")
                 continue
 
             work_items.append((index, path))
+            emit(f"{prefix} queued {path} ({format_size(size)})")
 
         if work_items:
             with ThreadPoolExecutor(max_workers=options.jobs) as executor:
-                futures = {
-                    executor.submit(convert_file, path, options): (index, path)
-                    for index, path in work_items
-                }
+                futures = {}
+                for index, path in work_items:
+                    prefix = f"[{index}/{len(scan.files)}]"
+                    emit(f"{prefix} starting {path}")
+                    futures[executor.submit(convert_file, path, options)] = (index, path)
                 for future in as_completed(futures):
                     index, path = futures[future]
                     prefix = f"[{index}/{len(scan.files)}]"
@@ -822,12 +834,12 @@ def main() -> None:
                         summary.failed += 1
                         summary.failures.append(f"{path}: {outcome.message}")
                         summary.broken_files.append(f"{path}: {outcome.message}")
-                        print(f"{prefix} failed {path}: {outcome.message}")
+                        emit(f"{prefix} failed {path}: {outcome.message}")
                         continue
 
                     summary.converted += 1
                     summary.bytes_after += outcome.output_size
-                    print(
+                    emit(
                         f"{prefix} converted {path}: "
                         f"{format_size(outcome.original_size)} -> {format_size(outcome.output_size)} "
                         f"({format_percent_change(outcome.original_size, outcome.output_size)})"
@@ -851,34 +863,34 @@ def main() -> None:
     finally:
         cleanup_temp_paths()
 
-    print()
-    print("Summary")
-    print(f"  MP4 files discovered: {summary.total_files}")
-    print(f"  Symlinks skipped:     {summary.symlinks_skipped}")
-    print(f"  Compliant skipped:    {summary.compliant_skipped}")
-    print(f"  Dry-run pending:      {summary.dry_run_pending}")
-    print(f"  Converted:            {summary.converted}")
-    print(f"  Check non-compliant:  {summary.check_non_compliant}")
-    print(f"  Failures:             {summary.failed}")
-    print(f"  Broken MP4s:          {len(summary.broken_files)}")
-    print(f"  Run dirs removed:     {len(summary.removed_run_dirs)}")
-    print(f"  Total size before:    {format_size(summary.bytes_before)}")
-    print(f"  Total size after:     {format_size(summary.bytes_after)}")
-    print(
+    emit()
+    emit("Summary")
+    emit(f"  MP4 files discovered: {summary.total_files}")
+    emit(f"  Symlinks skipped:     {summary.symlinks_skipped}")
+    emit(f"  Compliant skipped:    {summary.compliant_skipped}")
+    emit(f"  Dry-run pending:      {summary.dry_run_pending}")
+    emit(f"  Converted:            {summary.converted}")
+    emit(f"  Check non-compliant:  {summary.check_non_compliant}")
+    emit(f"  Failures:             {summary.failed}")
+    emit(f"  Broken MP4s:          {len(summary.broken_files)}")
+    emit(f"  Run dirs removed:     {len(summary.removed_run_dirs)}")
+    emit(f"  Total size before:    {format_size(summary.bytes_before)}")
+    emit(f"  Total size after:     {format_size(summary.bytes_after)}")
+    emit(
         f"  Net size change:      {format_percent_change(summary.bytes_before, summary.bytes_after)}"
     )
     if summary.failed:
-        print("  Failure details:")
+        emit("  Failure details:")
         for failure in summary.failures:
-            print(f"    - {failure}")
+            emit(f"    - {failure}")
     if summary.broken_files:
-        print("  Broken MP4 details:")
+        emit("  Broken MP4 details:")
         for broken_file in summary.broken_files:
-            print(f"    - {broken_file}")
+            emit(f"    - {broken_file}")
     if summary.removed_run_dirs:
-        print("  Removed run directories:")
+        emit("  Removed run directories:")
         for run_dir in summary.removed_run_dirs:
-            print(f"    - {run_dir}")
+            emit(f"    - {run_dir}")
 
     if summary.failed:
         raise SystemExit(1)

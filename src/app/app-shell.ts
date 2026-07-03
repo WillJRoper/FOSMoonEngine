@@ -430,7 +430,7 @@ export function createAppShell(app: HTMLElement): void {
       const fractionToSeek = pendingSeekFraction;
 
       pendingSeekFraction = null;
-      viewport.seekToFraction(fractionToSeek);
+      viewport.seekToFraction(fractionToSeek, { approximate: true });
     });
   }
 
@@ -820,7 +820,7 @@ export function createAppShell(app: HTMLElement): void {
       const frac = secs / Math.max(viewport.getDurationSeconds(), 1);
 
       scrubFraction = Math.max(0, Math.min(1, scrubFraction + scrubDirection * frac));
-      viewport.seekToFraction(scrubFraction);
+      viewport.seekToFraction(scrubFraction, { approximate: true });
       scrubRaf = requestAnimationFrame(stepFraction);
     };
 

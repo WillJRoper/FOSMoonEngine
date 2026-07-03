@@ -43,9 +43,9 @@ class HarmonizeMp4AssetsTests(unittest.TestCase):
             duration_seconds=20.0,
             codec_name="h264",
             profile="High",
-            level=41,
-            width=1920,
-            height=1080,
+            level=51,
+            width=3840,
+            height=2160,
             pixel_format="yuv420p",
             avg_frame_rate="30/1",
             r_frame_rate="30/1",
@@ -62,9 +62,9 @@ class HarmonizeMp4AssetsTests(unittest.TestCase):
             duration_seconds=20.0,
             codec_name="hevc",
             profile="Main",
-            level=51,
-            width=2048,
-            height=1152,
+            level=41,
+            width=4096,
+            height=2304,
             pixel_format="yuv444p",
             avg_frame_rate="75/1",
             r_frame_rate="75/1",
@@ -77,10 +77,10 @@ class HarmonizeMp4AssetsTests(unittest.TestCase):
 
         self.assertIn("codec=hevc", issues)
         self.assertIn("profile=Main", issues)
-        self.assertIn("level=51", issues)
+        self.assertIn("level=41", issues)
         self.assertIn("pix_fmt=yuv444p", issues)
         self.assertIn("fps=75/1", issues)
-        self.assertIn("dimensions=2048x1152", issues)
+        self.assertIn("dimensions=4096x2304", issues)
         self.assertIn("audio_streams=1", issues)
         self.assertIn("faststart=false", issues)
         self.assertIn("max_keyframe_gap=6.000s", issues)
