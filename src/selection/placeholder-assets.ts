@@ -20,6 +20,7 @@ export interface VideoMatch {
   summaryUrl: string;
   audioUrl?: string;
   views?: Record<string, string>;
+  scrubViews?: Record<string, string>;
   viewId?: string;
   runId?: string;
 }
@@ -56,6 +57,7 @@ interface RunManifestEntry {
   audioPath?: string;
   defaultView?: string;
   views: Record<string, string>;
+  scrubViews?: Record<string, string>;
 }
 
 export interface ManifestController {
@@ -192,6 +194,11 @@ async function toGalleryManifestRun(
     views: Object.fromEntries(
       Object.entries(entry.views).map(([key, path]) => [key, withBaseUrl(path)]),
     ),
+    scrubViews: entry.scrubViews
+      ? Object.fromEntries(
+          Object.entries(entry.scrubViews).map(([key, path]) => [key, withBaseUrl(path)]),
+        )
+      : undefined,
   };
 }
 
@@ -310,6 +317,11 @@ async function findManifestBackedRun(
         withBaseUrl(path),
       ]),
     ),
+    scrubViews: best.scrubViews
+      ? Object.fromEntries(
+          Object.entries(best.scrubViews).map(([key, path]) => [key, withBaseUrl(path)]),
+        )
+      : undefined,
   };
 }
 

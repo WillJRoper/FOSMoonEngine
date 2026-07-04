@@ -24,6 +24,7 @@ export interface GalleryNode {
   audioUrl?: string;
   viewId?: string;
   views?: Record<string, string>;
+  scrubViews?: Record<string, string>;
   parameters: Record<string, number>;
   q: number;
   r: number;
@@ -70,6 +71,7 @@ export function buildGalleryScene(
     audioUrl: run.audioUrl,
     viewId: run.viewId,
     views: run.views,
+    scrubViews: run.scrubViews,
     parameters: { ...run.parameters },
     q: layout[index].q,
     r: layout[index].r,

@@ -326,9 +326,15 @@ def build_manifest_entry(
         Manifest entry dict, or None if the run has no video files.
     """
     animations_dir = run_dir / "animations"
+    scrub_animations_dir = run_dir / "animations_scrub"
     videos = (
         sorted(animations_dir.glob("*.mp4"))
         if animations_dir.exists()
+        else []
+    )
+    scrub_videos = (
+        sorted(scrub_animations_dir.glob("*.mp4"))
+        if scrub_animations_dir.exists()
         else []
     )
     if not videos:
@@ -342,6 +348,10 @@ def build_manifest_entry(
     view_paths = {
         infer_view_id(video): path_builder(video)
         for video in videos
+    }
+    scrub_view_paths = {
+        infer_view_id(video): path_builder(video)
+        for video in scrub_videos
     }
     default_view = pick_default_view(view_paths)
 
@@ -360,6 +370,9 @@ def build_manifest_entry(
 
     if audio_track.exists():
         entry["audioPath"] = path_builder(audio_track)
+
+    if scrub_view_paths:
+        entry["scrubViews"] = scrub_view_paths
 
     thumbnail_path = find_gallery_thumbnail(run_dir)
     if thumbnail_path is not None:
@@ -438,6 +451,11 @@ def build_manifest_entry_from_r2(
         for key in object_keys
         if key.endswith(".mp4") and "/animations/" in key
     )
+    scrub_video_keys = sorted(
+        key
+        for key in object_keys
+        if key.endswith(".mp4") and "/animations_scrub/" in key
+    )
     if not video_keys:
         return None
 
@@ -450,6 +468,10 @@ def build_manifest_entry_from_r2(
     view_paths = {
         infer_view_id(Path(video_key)): to_manifest_asset_path(object_prefix, video_key)
         for video_key in video_keys
+    }
+    scrub_view_paths = {
+        infer_view_id(Path(video_key)): to_manifest_asset_path(object_prefix, video_key)
+        for video_key in scrub_video_keys
     }
     default_view = pick_default_view(view_paths)
 
@@ -477,6 +499,9 @@ def build_manifest_entry_from_r2(
 
     if audio_key in object_keys:
         entry["audioPath"] = to_manifest_asset_path(object_prefix, audio_key)
+
+    if scrub_view_paths:
+        entry["scrubViews"] = scrub_view_paths
 
     return entry
 
