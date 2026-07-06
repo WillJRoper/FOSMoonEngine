@@ -12,16 +12,13 @@
   header: true
 
 - text: Lead Developer - Dr Will Roper (University of Sussex / Syzygy Labs)
-  url: https://willjroper.github.io/
 
 - text: The Universe Makers Team
-  url: https://universe-makers.github.io/about.html
 
 - text: Simulations and Visualisations
   header: true
 
 - text: All simulations performed with SWIFT
-  url: https://swift.strw.leidenuniv.nl/
 
 - text: 'Simulations performed by Jacob Kegerreis, Ella Buxton, Harrison Davies, Vince Eke, Callum Mosley'
 
@@ -31,28 +28,26 @@
   header: true
 
 - text: COSMA (Durham University)
-  url: https://www.durham.ac.uk/departments/academic/physics/cosma/
 
 - text: Partner Institutions
   header: true
 
 - text: University of Sussex
-  url: https://www.sussex.ac.uk/
 
 - text: Institute for Computational Cosmology, Durham University
-  url: https://www.icc.dur.ac.uk/
 
 - text: Imperial College London
-  url: https://www.imperial.ac.uk/
 
 - text: The Royal Society — Summer Science Exhibition 2026
-  url: https://royalsociety.org/
 
 - text: Image Credits
   header: true
 
 - text: 'Moon Formation: Jacob Kegerreis, NASA Ames'
-  url: https://www.youtube.com/@jkeger_et_al
+
+- text: 'Jupiter Core impact: Jacob Kegerreis, Tom Sandes'
+
+- text: 'Mars Moon Formation: Jacob Kegerreis'
 
 - text: Funding
   header: true
@@ -63,4 +58,3 @@
   header: true
 
 - text: MoonEngine is released under the GNU General Public License v3.0
-  url: https://www.gnu.org/licenses/gpl-3.0.en.html
