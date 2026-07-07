@@ -3399,15 +3399,13 @@
       "views": {
         "houdini": "assets/planetary/pE95_Th05_b40v15_3e6/animations/houdini.mp4",
         "material": "assets/planetary/pE95_Th05_b40v15_3e6/animations/material.mp4",
-        "temperature": "assets/planetary/pE95_Th05_b40v15_3e6/animations/temperature.mp4",
-        "temperature_tkytxa37_tmp": "assets/planetary/pE95_Th05_b40v15_3e6/animations/temperature.tkytxa37.tmp.mp4"
+        "temperature": "assets/planetary/pE95_Th05_b40v15_3e6/animations/temperature.mp4"
       },
       "paramsPath": "assets/planetary/pE95_Th05_b40v15_3e6/parameters.yaml",
       "scrubViews": {
         "houdini": "assets/planetary/pE95_Th05_b40v15_3e6/animations_scrub/houdini.mp4",
         "material": "assets/planetary/pE95_Th05_b40v15_3e6/animations_scrub/material.mp4",
-        "temperature": "assets/planetary/pE95_Th05_b40v15_3e6/animations_scrub/temperature.mp4",
-        "temperature_tkytxa37_tmp": "assets/planetary/pE95_Th05_b40v15_3e6/animations_scrub/temperature.tkytxa37.tmp.mp4"
+        "temperature": "assets/planetary/pE95_Th05_b40v15_3e6/animations_scrub/temperature.mp4"
       },
       "thumbnailPath": "assets/planetary/pE95_Th05_b40v15_3e6/gallery-thumbnail.png"
     },
