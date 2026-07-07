@@ -1137,6 +1137,12 @@ button {
     border-color 0.16s ease;
 }
 
+.timeline__summary-btn svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  display: block;
+}
+
 .timeline__summary-btn:hover {
   background: var(--accent-soft);
   border-color: var(--accent-dim);
@@ -1171,6 +1177,11 @@ button {
     width: 1.9rem;
     min-width: 1.9rem;
     height: 1.9rem;
+  }
+
+  .timeline__summary-btn svg {
+    width: 0.92rem;
+    height: 0.92rem;
   }
 
   .timeline__speed-btn {

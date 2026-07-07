@@ -1214,8 +1214,6 @@ export function createAppShell(app: HTMLElement): void {
       if (!runRequests.isCurrent(runRequestId)) {
         return;
       }
-
-      await playViewportWithMutedFallback(viewport);
     })();
 
     const loadingFinished = new Promise<void>((resolve) => {
@@ -1232,11 +1230,8 @@ export function createAppShell(app: HTMLElement): void {
 
     hasCompletedInitialization = true;
     viewport.showMedia();
+    void playViewportWithMutedFallback(viewport);
     setMode('display');
-
-    if (viewport.isPaused()) {
-      void playViewportWithMutedFallback(viewport);
-    }
 
     syncRunAudioPlayback();
   }

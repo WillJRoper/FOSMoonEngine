@@ -155,7 +155,7 @@ export function createTimeline(
   summaryBtn.className = 'timeline__summary-btn';
   summaryBtn.type = 'button';
   summaryBtn.setAttribute('aria-label', 'View run summary');
-  summaryBtn.textContent = '\u24D8';
+  summaryBtn.innerHTML = createInfoSvg();
   summaryBtn.addEventListener('click', () => onSummaryClick?.());
 
   barRow.appendChild(audioWrap);
@@ -270,4 +270,14 @@ function createSpeakerSvg(): string {
       <line class="timeline__audio-mute-x" x1="3" y1="3" x2="21" y2="21"
             stroke="currentColor" stroke-width="2" />
     </svg>`;
+}
+
+function createInfoSvg(): string {
+  return `
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+      <circle cx="12" cy="12" r="9"></circle>
+      <path d="M12 10.4v5.1"></path>
+      <circle cx="12" cy="7.7" r="0.9" fill="currentColor" stroke="none"></circle>
+    </svg>
+  `;
 }
