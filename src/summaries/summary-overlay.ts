@@ -118,6 +118,7 @@ const RED = '#D7372A';
 const GREEN_BAND = 0.2;
 const AMBER_BAND = 0.5;
 const MAX = 2.0;
+const BACKDROP_ARM_DELAY_MS = 200;
 
 /**
  * Convert a normalized ratio into the short verdict chip shown in the modal.
@@ -370,6 +371,7 @@ export function createSummaryOverlay(
   overlay.classList.add('is-hidden');
 
   let hideTimer: number | undefined;
+  let backdropArmedAt = 0;
 
   const panel = document.createElement('div');
 
@@ -495,7 +497,7 @@ export function createSummaryOverlay(
   });
 
   overlay.addEventListener('click', (event) => {
-    if (event.target === overlay) {
+    if (event.target === overlay && performance.now() >= backdropArmedAt) {
       options.onReplay();
     }
   });
@@ -569,6 +571,7 @@ export function createSummaryOverlay(
       overlay.hidden = false;
       overlay.classList.remove('is-hidden');
       overlay.classList.remove('is-visible');
+      backdropArmedAt = performance.now() + BACKDROP_ARM_DELAY_MS;
 
       // Force a layout pass so re-adding `is-visible` reliably retriggers the
       // CSS transition even when the overlay is shown repeatedly in one session.

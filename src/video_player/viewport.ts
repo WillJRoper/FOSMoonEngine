@@ -48,7 +48,7 @@ export interface ViewportController {
   showMedia: () => void;
 
   /** Seek by normalized fraction 0..1. */
-  seekToFraction: (fraction: number, options?: ViewportSeekOptions) => void;
+  seekToFraction: (fraction: number) => void;
 
   /** Reset playback back to the start. */
   resetPlayback: () => void;
@@ -109,28 +109,12 @@ export interface ViewportController {
 
   /** Capture the current video frame as a data URL, or null if unavailable. */
   captureFrame: () => string | null;
-
-  /** Load or clear an optional low-res scrub proxy source. */
-  setScrubSource: (src: string | null) => void;
-
-  /** Whether an optional low-res scrub proxy is currently available. */
-  hasScrubSource: () => boolean;
-
-  /** Show or hide the optional scrub proxy while dragging. */
-  setScrubPreviewActive: (active: boolean) => void;
-
-  /** Seek the optional scrub proxy by normalized fraction 0..1. */
-  seekScrubPreviewToFraction: (fraction: number, options?: ViewportSeekOptions) => void;
 }
 
 export interface ViewportSourceOptions {
   seekFraction?: number;
   autoplay?: boolean;
   ownedObjectUrl?: boolean;
-}
-
-export interface ViewportSeekOptions {
-  approximate?: boolean;
 }
 
 /**
@@ -153,7 +137,6 @@ export function createViewport(
   // We use a real <video> so browser playback, seeking, and buffering work out
   // of the box. The rest of this module is mostly a light controller wrapper.
   const video = document.createElement('video');
-  const scrubPreview = document.createElement('video');
 
   video.className = 'viewport__media is-empty';
   // Summary capture draws the video into a canvas. Mark the media element as
@@ -166,16 +149,8 @@ export function createViewport(
   video.playsInline = true;
   video.preload = 'auto';
   video.setAttribute('aria-label', 'Simulation output');
-  scrubPreview.className = 'viewport__scrub-preview';
-  scrubPreview.setAttribute('aria-hidden', 'true');
-  scrubPreview.crossOrigin = 'anonymous';
-  scrubPreview.loop = false;
-  scrubPreview.muted = true;
-  scrubPreview.playsInline = true;
-  scrubPreview.preload = 'auto';
 
   viewport.appendChild(video);
-  viewport.appendChild(scrubPreview);
   container.appendChild(viewport);
 
   let timeUpdateCallback: ((fraction: number) => void) | undefined;
@@ -190,8 +165,6 @@ export function createViewport(
   let lastFrameDataUrl: string | null = null;
   const frameCaptureCanvas = document.createElement('canvas');
   const frameCaptureContext = frameCaptureCanvas.getContext('2d');
-  let scrubPreviewActive = false;
-  let scrubPreviewSrc: string | null = null;
 
   video.addEventListener('play', () => playStateCallback?.(false));
   video.addEventListener('pause', () => playStateCallback?.(true));
@@ -213,12 +186,6 @@ export function createViewport(
 
   video.addEventListener('ended', () => {
     endedCallback?.();
-  });
-
-  scrubPreview.addEventListener('loadeddata', () => {
-    if (scrubPreviewActive) {
-      scrubPreview.classList.add('is-visible');
-    }
   });
 
   // Persist the desired playback rate across source swaps so the user's
@@ -262,7 +229,6 @@ export function createViewport(
 
       releaseOwnedObjectUrl();
       lastFrameDataUrl = null;
-      scrubPreview.classList.remove('is-visible');
       ownedObjectUrl = options.ownedObjectUrl ? src : null;
 
       // Replace the source and wait for media data before seeking/autoplaying.
@@ -312,7 +278,6 @@ export function createViewport(
 
   function hideMedia(): void {
     video.classList.add('is-empty');
-    scrubPreview.classList.remove('is-visible');
   }
 
   function clearSource(): void {
@@ -320,14 +285,13 @@ export function createViewport(
     video.removeAttribute('src');
     video.load();
     lastFrameDataUrl = null;
-    scrubPreview.classList.remove('is-visible');
   }
 
   function showMedia(): void {
     video.classList.remove('is-empty');
   }
 
-  function seekToFraction(fraction: number, options: ViewportSeekOptions = {}): void {
+  function seekToFraction(fraction: number): void {
     if (!Number.isFinite(video.duration) || video.duration <= 0) {
       return;
     }
@@ -335,15 +299,7 @@ export function createViewport(
     // Clamp aggressively so scrubbing never asks the media element for a time
     // outside its real bounds.
     const clamped = Math.max(0, Math.min(1, fraction));
-    const nextTime = clamped * video.duration;
-
-    if (options.approximate && typeof video.fastSeek === 'function') {
-      video.fastSeek(nextTime);
-
-      return;
-    }
-
-    video.currentTime = nextTime;
+    video.currentTime = clamped * video.duration;
   }
 
   function resetPlayback(): void {
@@ -630,84 +586,6 @@ export function createViewport(
     }
   }
 
-  function setScrubPreviewActive(active: boolean): void {
-    scrubPreviewActive = active;
-    viewport.classList.remove('is-scrub-handoff');
-
-    if (active && scrubPreviewSrc !== null) {
-      viewport.classList.add('is-scrubbing');
-    } else {
-      viewport.classList.remove('is-scrubbing');
-    }
-
-    if (!active || !scrubPreviewSrc) {
-      if (scrubPreview.classList.contains('is-visible')) {
-        viewport.classList.add('is-scrub-handoff');
-        requestAnimationFrame(() => {
-          scrubPreview.classList.remove('is-visible');
-          requestAnimationFrame(() => {
-            viewport.classList.remove('is-scrub-handoff');
-          });
-        });
-      }
-
-      return;
-    }
-
-    if (scrubPreview.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
-      scrubPreview.classList.add('is-visible');
-    }
-  }
-
-  function setScrubSource(src: string | null): void {
-    scrubPreviewSrc = src;
-    scrubPreviewActive = false;
-    viewport.classList.remove('is-scrubbing');
-    scrubPreview.classList.remove('is-visible');
-
-    if (!src) {
-      scrubPreview.removeAttribute('src');
-      scrubPreview.load();
-
-      return;
-    }
-
-    if (scrubPreview.src.endsWith(src)) {
-      return;
-    }
-
-    scrubPreview.src = src;
-    scrubPreview.load();
-  }
-
-  function hasScrubSource(): boolean {
-    return scrubPreviewSrc !== null;
-  }
-
-  function seekScrubPreviewToFraction(
-    fraction: number,
-    options: ViewportSeekOptions = {},
-  ): void {
-    if (
-      scrubPreviewSrc === null ||
-      !Number.isFinite(scrubPreview.duration) ||
-      scrubPreview.duration <= 0
-    ) {
-      return;
-    }
-
-    const clamped = Math.max(0, Math.min(1, fraction));
-    const nextTime = clamped * scrubPreview.duration;
-
-    if (options.approximate && typeof scrubPreview.fastSeek === 'function') {
-      scrubPreview.fastSeek(nextTime);
-
-      return;
-    }
-
-    scrubPreview.currentTime = nextTime;
-  }
-
   function captureFrame(): string | null {
     storeCurrentFrame();
 
@@ -762,9 +640,5 @@ export function createViewport(
     clearPrewarmedSources,
     getPrewarmedBlobUrl,
     captureFrame,
-    setScrubSource,
-    hasScrubSource,
-    setScrubPreviewActive,
-    seekScrubPreviewToFraction,
   };
 }

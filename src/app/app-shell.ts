@@ -420,14 +420,6 @@ export function createAppShell(app: HTMLElement): void {
   function scheduleViewportSeek(fraction: number): void {
     pendingSeekFraction = fraction;
 
-    if (isPointerScrubbing && viewport.hasScrubSource()) {
-      viewport.seekScrubPreviewToFraction(fraction, { approximate: true });
-      lastPlaybackSeconds = fraction * viewport.getDurationSeconds();
-      refreshLiveDataOverlay(lastPlaybackSeconds);
-
-      return;
-    }
-
     if (scheduledSeekRafId !== null) {
       return;
     }
@@ -442,7 +434,7 @@ export function createAppShell(app: HTMLElement): void {
       const fractionToSeek = pendingSeekFraction;
 
       pendingSeekFraction = null;
-      viewport.seekToFraction(fractionToSeek, { approximate: true });
+      viewport.seekToFraction(fractionToSeek);
     });
   }
 
@@ -523,7 +515,6 @@ export function createAppShell(app: HTMLElement): void {
     lastScrubHudUpdateAt = 0;
     suspendAlternatePrewarming();
     viewport.pause();
-    viewport.setScrubPreviewActive(true);
     syncRunAudioPlayback();
   }
 
@@ -543,7 +534,6 @@ export function createAppShell(app: HTMLElement): void {
       return;
     }
 
-    viewport.setScrubPreviewActive(false);
     syncAudioToViewport({ force: true });
     lastPlaybackSeconds = viewport.getCurrentTimeSeconds();
     refreshLiveDataOverlay(lastPlaybackSeconds);
@@ -834,7 +824,7 @@ export function createAppShell(app: HTMLElement): void {
       const frac = secs / Math.max(viewport.getDurationSeconds(), 1);
 
       scrubFraction = Math.max(0, Math.min(1, scrubFraction + scrubDirection * frac));
-      viewport.seekToFraction(scrubFraction, { approximate: true });
+      viewport.seekToFraction(scrubFraction);
       scrubRaf = requestAnimationFrame(stepFraction);
     };
 
@@ -1173,7 +1163,6 @@ export function createAppShell(app: HTMLElement): void {
     const selectedViewId = resolveSelectedViewId(activeClass, match);
 
     const selectedViewUrl = getViewUrl(match, selectedViewId) ?? match.url;
-    const selectedScrubViewUrl = getScrubViewUrl(match, selectedViewId);
     const alternateViewUrls = Object.entries(match.views ?? {})
       .filter(([viewId]) => viewId !== selectedViewId)
       .map(([, url]) => url);
@@ -1188,7 +1177,6 @@ export function createAppShell(app: HTMLElement): void {
 
     const preparedSourcePromise = prepareActiveVideoSource(selectedViewUrl);
 
-    viewport.setScrubSource(selectedScrubViewUrl);
     viewport.resumePrewarming();
     viewport.prewarmSources(alternateViewUrls);
 
@@ -1221,6 +1209,12 @@ export function createAppShell(app: HTMLElement): void {
           ACTIVE_VIDEO_BUFFER_WAIT_MS,
         );
       }
+
+      if (!runRequests.isCurrent(runRequestId)) {
+        return;
+      }
+
+      await playViewportWithMutedFallback(viewport);
     })();
 
     const loadingFinished = new Promise<void>((resolve) => {
@@ -1237,8 +1231,12 @@ export function createAppShell(app: HTMLElement): void {
 
     hasCompletedInitialization = true;
     viewport.showMedia();
-    void playViewportWithMutedFallback(viewport);
     setMode('display');
+
+    if (viewport.isPaused()) {
+      void playViewportWithMutedFallback(viewport);
+    }
+
     syncRunAudioPlayback();
   }
 
@@ -1644,8 +1642,6 @@ export function createAppShell(app: HTMLElement): void {
     viewportTitle.classList.add('is-hidden');
     viewportTitle.innerHTML = '';
     viewport.pause();
-    viewport.setScrubPreviewActive(false);
-    viewport.setScrubSource(null);
     runAudio.pause();
     viewport.clearPrewarmedSources();
     viewport.resetPlayback();
@@ -1717,7 +1713,6 @@ export function createAppShell(app: HTMLElement): void {
 
     hasCompletedPlayback = false;
     summaryOverlay.hide();
-    viewport.setScrubSource(getScrubViewUrl(activeRunMatch, viewId));
     viewport.setSource(nextUrl, {
       seekFraction,
       autoplay: shouldAutoplay,
@@ -1925,7 +1920,6 @@ export function createAppShell(app: HTMLElement): void {
     displayMenu.close();
     viewport.pause();
     viewport.hideMedia();
-    viewport.setScrubPreviewActive(false);
     syncRunAudioPlayback();
     setElementVisibility(displayChrome, false);
     setElementVisibility(swiftLogo, false);
@@ -1986,14 +1980,6 @@ export function createAppShell(app: HTMLElement): void {
     }
 
     return match.views[viewId] ?? null;
-  }
-
-  function getScrubViewUrl(match: VideoMatch, viewId?: string): string | null {
-    if (!viewId || !match.scrubViews) {
-      return null;
-    }
-
-    return match.scrubViews[viewId] ?? null;
   }
 
   function doesActiveViewSupportAudio(): boolean {

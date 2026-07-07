@@ -3,8 +3,8 @@
 
 Recursively scans an asset tree for ``.mp4`` files, skips generated build
 directories such as ``dist/`` and scrub proxy directories such as
-``animations_scrub/``, and converts non-compliant files to a 4k-first H.264
-delivery profile tuned for local scrubbing.
+``animations_scrub/``, and converts non-compliant files to a 1080p-first H.264
+delivery profile tuned for responsive local playback.
 """
 
 from __future__ import annotations
@@ -30,10 +30,10 @@ EXCLUDED_DIRECTORY_NAMES = frozenset({
     "__pycache__",
     "animations_scrub",
 })
-MAX_WIDTH = 3840
-MAX_HEIGHT = 2160
+MAX_WIDTH = 1920
+MAX_HEIGHT = 1080
 GOP_DURATION_SECONDS = 0.2
-H264_LEVEL = 51
+H264_LEVEL = 42
 DEFAULT_JOBS = max(1, os.cpu_count() or 1)
 STOP_EVENT = threading.Event()
 TEMP_PATHS: set[Path] = set()
@@ -514,7 +514,7 @@ def build_ffmpeg_command(
         "-profile:v",
         "high",
         "-level:v",
-        "5.1",
+        "4.2",
         "-pix_fmt",
         "yuv420p",
         "-preset",

@@ -5,8 +5,8 @@ Scans an asset tree for files laid out as ``<family>/<run>/animations/*.mp4`` an
 writes scrub-friendly proxy videos to ``<family>/<run>/animations_scrub/*.mp4``.
 These proxies are intended for timeline dragging, where immediate perceived
 control matters more than full-resolution playback fidelity. The default encode
-profile favors seek responsiveness over compression efficiency: 1080p max,
-15 fps, and one keyframe per frame.
+profile favors seek responsiveness over compression efficiency: 720p max,
+24 fps, and one keyframe per frame.
 """
 
 from __future__ import annotations
@@ -22,9 +22,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 EXCLUDED_DIRECTORY_NAMES = frozenset({"dist", ".git", "__pycache__"})
-DEFAULT_MAX_WIDTH = 1920
-DEFAULT_MAX_HEIGHT = 1080
-DEFAULT_FPS = 15
+DEFAULT_MAX_WIDTH = 1280
+DEFAULT_MAX_HEIGHT = 720
+DEFAULT_FPS = 24
 DEFAULT_GOP_DURATION_SECONDS = 1 / DEFAULT_FPS
 
 
