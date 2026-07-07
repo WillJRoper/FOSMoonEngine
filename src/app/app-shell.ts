@@ -1883,12 +1883,18 @@ export function createAppShell(app: HTMLElement): void {
   }
 
   function showGalleryOverlay(): void {
+    displayMenu.close();
+    setElementVisibility(topLeft, false);
     setElementVisibility(aboutModal.infoButton, false);
     galleryOverlay.show();
   }
 
   function hideGalleryOverlay(): void {
     galleryOverlay.hide();
+    setElementVisibility(
+      topLeft,
+      app.dataset.mode === 'config' || app.dataset.mode === 'display',
+    );
     setElementVisibility(aboutModal.infoButton, true);
   }
 
