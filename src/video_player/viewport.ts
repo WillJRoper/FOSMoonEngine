@@ -217,9 +217,28 @@ export function createViewport(
 
     window.setTimeout(() => {
       // If the requested source is already loaded, just cancel the fade and keep
-      // the current video. There is no need to flush playback state.
+      // the current video, but still honour any requested seek/reset behavior.
       if (video.src.endsWith(src)) {
+        const seekFraction = options.seekFraction;
+
+        if (
+          seekFraction !== undefined &&
+          Number.isFinite(video.duration) &&
+          video.duration > 0
+        ) {
+          const clamped = Math.max(0, Math.min(0.999, seekFraction));
+
+          video.currentTime = clamped * video.duration;
+        } else {
+          video.currentTime = 0;
+        }
+
+        video.playbackRate = desiredRate;
         video.classList.remove('fade-out');
+
+        if (options.autoplay) {
+          void video.play().catch(() => {});
+        }
 
         return;
       }
