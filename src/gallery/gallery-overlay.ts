@@ -367,6 +367,9 @@ export function createGalleryOverlay(
 
   function stopDragging(): void {
     isPointerDragging = false;
+    dragDistancePx = 0;
+    pressedRunId = null;
+    activePointers.clear();
     viewport.classList.remove('is-dragging');
   }
 

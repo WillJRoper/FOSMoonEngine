@@ -89,6 +89,7 @@ const ACTIVE_VIDEO_LOADED_DATA_WAIT_MS = 8000;
 const LOCAL_MANIFEST_MIN_TERMINAL_TIME_MAX_MS = 7000;
 const ALTERNATE_PREWARM_RESUME_DELAY_MS = 1200;
 const SCRUB_HUD_UPDATE_INTERVAL_MS = 250;
+const TOUCH_INTERACTION_MEDIA_QUERY = '(hover: none), (pointer: coarse)';
 const COLLAPSIBLE_CHROME_IDLE_MS = 2000;
 const SCRUB_SEEK_SETTLE_WAIT_MS = 250;
 const AUDIO_RESYNC_DRIFT_SECONDS = 1;
@@ -114,6 +115,7 @@ export function createAppShell(app: HTMLElement): void {
   let availableSimulationClasses = getSelectableSimulationClasses(advancedSettings);
   const manifestController = createManifestController();
   const runRequests = createRunRequestController();
+  const touchInteractionMediaQuery = window.matchMedia(TOUCH_INTERACTION_MEDIA_QUERY);
 
   setVerboseLoggingEnabled(advancedSettings.verboseLogging);
   // ── State ────────────────────────────────────────────────────────────────
@@ -152,8 +154,10 @@ export function createAppShell(app: HTMLElement): void {
   // Manifest-backed run selection for the currently loaded simulation.
   let activeRunMatch: VideoMatch | null = null;
   let activeGalleryRuns: GalleryManifestRun[] = [];
+  let activeGalleryRunsClassId: string | null = null;
   let restoreSummaryAfterGalleryClose = false;
   let restoreConfigAfterGalleryClose = false;
+  let resumePlaybackAfterGalleryClose = false;
   let configActiveView: OverlayPanelView = 'parameters';
   let configReturnView: OverlayPanelView | null = null;
 
@@ -957,6 +961,9 @@ export function createAppShell(app: HTMLElement): void {
     hideGalleryOverlay();
 
     if (view === 'parameters') {
+      viewport.hideMedia();
+      viewport.pause();
+      viewport.clearSource();
       overlayPanel.setSimulation(activeClass, getActiveValues());
     }
 
@@ -1151,7 +1158,10 @@ export function createAppShell(app: HTMLElement): void {
   ): Promise<void> {
     hideGalleryOverlay();
     restoreSummaryAfterGalleryClose = false;
-    activeGalleryRuns = await manifestController.listRuns(activeClass.id);
+    if (activeGalleryRunsClassId !== activeClass.id) {
+      activeGalleryRuns = await manifestController.listRuns(activeClass.id);
+      activeGalleryRunsClassId = activeClass.id;
+    }
 
     if (!runRequests.isCurrent(runRequestId)) {
       return;
@@ -1235,7 +1245,13 @@ export function createAppShell(app: HTMLElement): void {
   async function openGallery(options: { restoreSummaryOnClose?: boolean } = {}): Promise<void> {
     restoreSummaryAfterGalleryClose = options.restoreSummaryOnClose ?? false;
     restoreConfigAfterGalleryClose = app.dataset.mode === 'config';
-    activeGalleryRuns = await manifestController.listRuns(activeClass.id);
+    resumePlaybackAfterGalleryClose =
+      app.dataset.mode === 'display' && !viewport.isPaused() && !hasCompletedPlayback;
+
+    if (activeGalleryRunsClassId !== activeClass.id) {
+      activeGalleryRuns = await manifestController.listRuns(activeClass.id);
+      activeGalleryRunsClassId = activeClass.id;
+    }
 
     const scene = buildGalleryScene(activeClass, activeGalleryRuns);
     const litRunIds = new Set(getCompletedGalleryRunIds(activeClass.id));
@@ -1263,10 +1279,19 @@ export function createAppShell(app: HTMLElement): void {
         activeCompletedRunToken,
       );
       summaryOverlay.show();
+    } else if (hasCompletedInitialization) {
+      viewport.showMedia();
+
+      if (resumePlaybackAfterGalleryClose) {
+        void playViewportWithMutedFallback(viewport);
+      }
+
+      syncRunAudioPlayback();
     }
 
     restoreConfigAfterGalleryClose = false;
     restoreSummaryAfterGalleryClose = false;
+    resumePlaybackAfterGalleryClose = false;
   }
 
   async function handleGalleryRunSelection(runId: string): Promise<void> {
@@ -1275,6 +1300,11 @@ export function createAppShell(app: HTMLElement): void {
     if (!run) {
       return;
     }
+
+    hideGalleryOverlay();
+    restoreConfigAfterGalleryClose = false;
+    restoreSummaryAfterGalleryClose = false;
+    resumePlaybackAfterGalleryClose = false;
 
     if (Object.keys(run.parameters).length > 0) {
       valuesByClass[activeClass.id] = { ...run.parameters };
@@ -1594,6 +1624,7 @@ export function createAppShell(app: HTMLElement): void {
     hasCompletedPlayback = false;
     activeRunMetadata = null;
     activeRunMatch = null;
+    resumePlaybackAfterGalleryClose = false;
     lastPlaybackSeconds = 0;
     isPointerScrubbing = false;
     wasPlayingBeforeScrub = false;
@@ -1658,6 +1689,10 @@ export function createAppShell(app: HTMLElement): void {
    * @returns void
    */
   function handleViewSelection(viewId: string): void {
+    if (usesTouchInteractionChrome()) {
+      collapseOneNow(leftCenter);
+    }
+
     // Guard: no views configured, or already on this view.
     if (!activeRunMatch?.views) {
       return;
@@ -1882,15 +1917,31 @@ export function createAppShell(app: HTMLElement): void {
     element.classList.toggle('is-hidden', !isVisible);
   }
 
+  function usesTouchInteractionChrome(): boolean {
+    return touchInteractionMediaQuery.matches;
+  }
+
   function showGalleryOverlay(): void {
     displayMenu.close();
+    viewport.pause();
+    viewport.hideMedia();
+    viewport.setScrubPreviewActive(false);
+    syncRunAudioPlayback();
+    setElementVisibility(displayChrome, false);
+    setElementVisibility(swiftLogo, false);
     setElementVisibility(topLeft, false);
     setElementVisibility(aboutModal.infoButton, false);
+    infoOverlay.classList.remove('is-visible');
     galleryOverlay.show();
   }
 
   function hideGalleryOverlay(): void {
     galleryOverlay.hide();
+    setElementVisibility(
+      displayChrome,
+      app.dataset.mode === 'config' || app.dataset.mode === 'display',
+    );
+    setElementVisibility(swiftLogo, app.dataset.mode === 'display');
     setElementVisibility(
       topLeft,
       app.dataset.mode === 'config' || app.dataset.mode === 'display',
