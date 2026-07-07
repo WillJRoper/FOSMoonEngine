@@ -2,8 +2,9 @@
 """Harmonize MP4 assets for smoother browser playback and scrubbing.
 
 Recursively scans an asset tree for ``.mp4`` files, skips generated build
-directories such as ``dist/``, and converts non-compliant files to a 4k-first
-H.264 delivery profile tuned for local scrubbing.
+directories such as ``dist/`` and scrub proxy directories such as
+``animations_scrub/``, and converts non-compliant files to a 4k-first H.264
+delivery profile tuned for local scrubbing.
 """
 
 from __future__ import annotations
@@ -23,11 +24,17 @@ from pathlib import Path
 from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-EXCLUDED_DIRECTORY_NAMES = frozenset({"dist", ".git", "__pycache__"})
+EXCLUDED_DIRECTORY_NAMES = frozenset({
+    "dist",
+    ".git",
+    "__pycache__",
+    "animations_scrub",
+})
 MAX_WIDTH = 3840
 MAX_HEIGHT = 2160
 GOP_DURATION_SECONDS = 0.2
 H264_LEVEL = 51
+DEFAULT_JOBS = max(1, os.cpu_count() or 1)
 STOP_EVENT = threading.Event()
 TEMP_PATHS: set[Path] = set()
 TEMP_PATHS_LOCK = threading.Lock()
@@ -153,8 +160,11 @@ def parse_args() -> CliOptions:
     parser.add_argument(
         "--jobs",
         type=int,
-        default=max(1, min(4, os.cpu_count() or 1)),
-        help="Maximum concurrent FFmpeg jobs (default: min(4, CPU count)).",
+        default=DEFAULT_JOBS,
+        help=(
+            "Maximum concurrent worker jobs used for compliance checks and "
+            f"FFmpeg conversions (default: CPU count = {DEFAULT_JOBS})."
+        ),
     )
     parser.add_argument(
         "--dry-run",
@@ -762,23 +772,38 @@ def main() -> None:
     working_run_dirs: set[Path] = set()
 
     try:
+        compliance_results: dict[Path, ComplianceResult | Exception] = {}
+        with ThreadPoolExecutor(max_workers=options.jobs) as executor:
+            futures = {
+                executor.submit(
+                    check_compliance,
+                    path,
+                    fps=options.fps,
+                    gop_duration_seconds=options.gop_duration_seconds,
+                ): path
+                for path in scan.files
+            }
+            for future in as_completed(futures):
+                path = futures[future]
+                try:
+                    compliance_results[path] = future.result()
+                except Exception as exc:
+                    compliance_results[path] = exc
+
         for index, path in enumerate(scan.files, start=1):
             size = path.stat().st_size
             summary.bytes_before += size
 
             prefix = f"[{index}/{len(scan.files)}]"
-            try:
-                compliance = check_compliance(
-                    path,
-                    fps=options.fps,
-                    gop_duration_seconds=options.gop_duration_seconds,
-                )
-            except Exception as exc:
+            compliance_result = compliance_results[path]
+            if isinstance(compliance_result, Exception):
+                exc = compliance_result
                 summary.failed += 1
                 summary.failures.append(f"{path}: {exc}")
                 summary.broken_files.append(f"{path}: {exc}")
                 emit(f"{prefix} failed {path}: {exc}")
                 continue
+            compliance = compliance_result
 
             working_run_dirs.add(run_dirs_by_file[path])
 

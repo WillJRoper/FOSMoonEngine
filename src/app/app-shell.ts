@@ -954,7 +954,7 @@ export function createAppShell(app: HTMLElement): void {
    */
   function openConfigPanel(view: OverlayPanelView): void {
     configReturnView = app.dataset.mode === 'config' ? configActiveView : null;
-    galleryOverlay.hide();
+    hideGalleryOverlay();
 
     if (view === 'parameters') {
       overlayPanel.setSimulation(activeClass, getActiveValues());
@@ -1006,7 +1006,7 @@ export function createAppShell(app: HTMLElement): void {
    * @returns void
    */
   function handleCloseConfig(): void {
-    galleryOverlay.hide();
+    hideGalleryOverlay();
     summaryOverlay.hide();
     if (configReturnView) {
       overlayPanel.setView(configReturnView);
@@ -1021,7 +1021,7 @@ export function createAppShell(app: HTMLElement): void {
 
   function handleHome(): void {
     logInfo('Returning to parameter selection', { simClassId: activeClass.id });
-    galleryOverlay.hide();
+    hideGalleryOverlay();
     resetSimulationState();
     hasCompletedInitialization = false;
     viewport.hideMedia();
@@ -1034,7 +1034,7 @@ export function createAppShell(app: HTMLElement): void {
    * @returns void
    */
   function handleReplay(): void {
-    galleryOverlay.hide();
+    hideGalleryOverlay();
     hasCompletedPlayback = false;
     summaryOverlay.hide();
 
@@ -1149,7 +1149,7 @@ export function createAppShell(app: HTMLElement): void {
     match: VideoMatch,
     runRequestId: number,
   ): Promise<void> {
-    galleryOverlay.hide();
+    hideGalleryOverlay();
     restoreSummaryAfterGalleryClose = false;
     activeGalleryRuns = await manifestController.listRuns(activeClass.id);
 
@@ -1243,11 +1243,11 @@ export function createAppShell(app: HTMLElement): void {
     overlayPanel.hide();
     galleryOverlay.update(activeClass, scene, litRunIds);
     summaryOverlay.hide();
-    galleryOverlay.show();
+    showGalleryOverlay();
   }
 
   function handleCloseGallery(): void {
-    galleryOverlay.hide();
+    hideGalleryOverlay();
 
     if (restoreConfigAfterGalleryClose) {
       setMode('config');
@@ -1468,7 +1468,7 @@ export function createAppShell(app: HTMLElement): void {
     // Config overlay: only shown when we're explicitly in config mode.
     if (nextMode === 'config') {
       loadingOverlay.hide();
-      galleryOverlay.hide();
+      hideGalleryOverlay();
       overlayPanel.setSimulation(activeClass, getActiveValues());
       overlayPanel.show();
     } else {
@@ -1608,7 +1608,7 @@ export function createAppShell(app: HTMLElement): void {
     }
 
     summaryOverlay.hide();
-    galleryOverlay.hide();
+    hideGalleryOverlay();
     viewSwitcher.hide();
     viewportTitle.classList.add('is-hidden');
     viewportTitle.innerHTML = '';
@@ -1880,6 +1880,16 @@ export function createAppShell(app: HTMLElement): void {
   function setElementVisibility(element: HTMLElement, isVisible: boolean): void {
     element.hidden = !isVisible;
     element.classList.toggle('is-hidden', !isVisible);
+  }
+
+  function showGalleryOverlay(): void {
+    setElementVisibility(aboutModal.infoButton, false);
+    galleryOverlay.show();
+  }
+
+  function hideGalleryOverlay(): void {
+    galleryOverlay.hide();
+    setElementVisibility(aboutModal.infoButton, true);
   }
 
   /**
