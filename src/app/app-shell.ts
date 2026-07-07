@@ -1184,6 +1184,7 @@ export function createAppShell(app: HTMLElement): void {
       const preparedSource = await preparedSourcePromise;
 
       if (!runRequests.isCurrent(runRequestId)) {
+        releasePreparedVideoSource(preparedSource);
         return;
       }
 
@@ -1446,6 +1447,12 @@ export function createAppShell(app: HTMLElement): void {
     const parsed = Number(match[1]);
 
     return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  }
+
+  function releasePreparedVideoSource(source: PreparedVideoSource): void {
+    if (source.ownedObjectUrl) {
+      URL.revokeObjectURL(source.src);
+    }
   }
 
   function parseContentLength(value: string | null): number | null {
