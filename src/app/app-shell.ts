@@ -82,7 +82,6 @@ interface PreparedVideoSource {
   shouldWaitForBuffer: boolean;
 }
 
-const ACTIVE_VIDEO_FULL_FETCH_MAX_BYTES = 50 * 1024 * 1024;
 const ACTIVE_VIDEO_BUFFER_SECONDS = 8;
 const ACTIVE_VIDEO_BUFFER_WAIT_MS = 6000;
 const ACTIVE_VIDEO_LOADED_DATA_WAIT_MS = 8000;
@@ -153,6 +152,8 @@ export function createAppShell(app: HTMLElement): void {
 
   // Manifest-backed run selection for the currently loaded simulation.
   let activeRunMatch: VideoMatch | null = null;
+  let activeGalleryRunIds: string[] = [];
+  let activeGalleryRunIdsClassId: string | null = null;
   let activeGalleryRuns: GalleryManifestRun[] = [];
   let activeGalleryRunsClassId: string | null = null;
   let restoreSummaryAfterGalleryClose = false;
@@ -1148,9 +1149,10 @@ export function createAppShell(app: HTMLElement): void {
   ): Promise<void> {
     hideGalleryOverlay();
     restoreSummaryAfterGalleryClose = false;
-    if (activeGalleryRunsClassId !== activeClass.id) {
-      activeGalleryRuns = await manifestController.listRuns(activeClass.id);
-      activeGalleryRunsClassId = activeClass.id;
+
+    if (activeGalleryRunIdsClassId !== activeClass.id) {
+      activeGalleryRunIds = await manifestController.listRunIds(activeClass.id);
+      activeGalleryRunIdsClassId = activeClass.id;
     }
 
     if (!runRequests.isCurrent(runRequestId)) {
@@ -1242,10 +1244,7 @@ export function createAppShell(app: HTMLElement): void {
     resumePlaybackAfterGalleryClose =
       app.dataset.mode === 'display' && !viewport.isPaused() && !hasCompletedPlayback;
 
-    if (activeGalleryRunsClassId !== activeClass.id) {
-      activeGalleryRuns = await manifestController.listRuns(activeClass.id);
-      activeGalleryRunsClassId = activeClass.id;
-    }
+    await ensureActiveGalleryRunsLoaded();
 
     const scene = buildGalleryScene(activeClass, activeGalleryRuns);
     const litRunIds = new Set(getCompletedGalleryRunIds(activeClass.id));
@@ -1289,6 +1288,8 @@ export function createAppShell(app: HTMLElement): void {
   }
 
   async function handleGalleryRunSelection(runId: string): Promise<void> {
+    await ensureActiveGalleryRunsLoaded();
+
     const run = activeGalleryRuns.find((entry) => entry.runId === runId);
 
     if (!run) {
@@ -1324,61 +1325,10 @@ export function createAppShell(app: HTMLElement): void {
   async function prepareActiveVideoSource(
     videoUrl: string,
   ): Promise<PreparedVideoSource> {
-    const resolvedVideoUrl = resolveOnlineAssetUrl(videoUrl);
-    const contentLength = await probeContentLength(videoUrl);
-
-    if (
-      contentLength !== null &&
-      contentLength > 0 &&
-      contentLength <= ACTIVE_VIDEO_FULL_FETCH_MAX_BYTES
-    ) {
-        logInfo('Downloading active video behind loading overlay', {
-        videoUrl: resolvedVideoUrl,
-        contentLength,
-      });
-
-      try {
-        const mediaResponse = await fetchWithOnlineAssetFallback(videoUrl);
-
-        if (!mediaResponse.ok) {
-          throw new Error(`Failed to download active video: ${resolvedVideoUrl}`);
-        }
-
-        const blob = await mediaResponse.blob();
-
-        logInfo(`Active video full fetch complete: ${blob.size} bytes`, {
-          videoUrl: resolveOnlineAssetUrl(videoUrl),
-          blobType: blob.type,
-        });
-
-        return {
-          src: URL.createObjectURL(blob),
-          ownedObjectUrl: true,
-          shouldWaitForBuffer: false,
-        };
-      } catch (error) {
-        logWarn(
-          `Full-fetch FAILED; falling back to progressive: ${error instanceof Error ? error.message : String(error)}`,
-          {
-            videoUrl,
-          },
-        );
-      }
-    }
-
-    if (contentLength !== null) {
-      logInfo('Active video exceeds full-fetch threshold; using progressive load', {
-        videoUrl,
-        contentLength,
-        fullFetchMaxBytes: ACTIVE_VIDEO_FULL_FETCH_MAX_BYTES,
-      });
-    } else {
-      logInfo('Could not determine active video size; using progressive load', {
-        videoUrl,
-      });
-    }
-
-    logInfo('Using progressive active video load', { videoUrl });
+    logInfo('Using direct active video load', {
+      videoUrl,
+      resolvedVideoUrl: resolveOnlineAssetUrl(videoUrl),
+    });
 
     return {
       src: resolveOnlineAssetUrl(videoUrl),
@@ -1387,77 +1337,10 @@ export function createAppShell(app: HTMLElement): void {
     };
   }
 
-  async function probeContentLength(videoUrl: string): Promise<number | null> {
-    try {
-      const rangeResponse = await fetchWithOnlineAssetFallback(videoUrl, {
-        headers: { Range: 'bytes=0-0' },
-      });
-
-      logInfo('Probed active video size with range request', {
-        videoUrl,
-        ok: rangeResponse.ok,
-        status: rangeResponse.status,
-        contentLength: rangeResponse.headers.get('Content-Length'),
-        contentRange: rangeResponse.headers.get('Content-Range'),
-      });
-
-      const contentLength = parseContentLength(
-        rangeResponse.headers.get('Content-Length'),
-      );
-
-      if (contentLength !== null) {
-        return contentLength;
-      }
-
-      const sizeFromRange = parseContentRangeTotal(
-        rangeResponse.headers.get('Content-Range'),
-      );
-
-      if (sizeFromRange !== null) {
-        return sizeFromRange;
-      }
-
-      return null;
-    } catch (error) {
-      logWarn('Could not probe active video size', {
-        videoUrl,
-        error: error instanceof Error ? error.message : String(error),
-      });
-
-      return null;
-    }
-  }
-
-  function parseContentRangeTotal(header: string | null): number | null {
-    if (!header) {
-      return null;
-    }
-
-    const match = header.match(/bytes\s+\d+-\d+\/(\d+)/i);
-
-    if (!match) {
-      return null;
-    }
-
-    const parsed = Number(match[1]);
-
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
-  }
-
   function releasePreparedVideoSource(source: PreparedVideoSource): void {
     if (source.ownedObjectUrl) {
       URL.revokeObjectURL(source.src);
     }
-  }
-
-  function parseContentLength(value: string | null): number | null {
-    if (!value) {
-      return null;
-    }
-
-    const parsed = Number(value);
-
-    return Number.isFinite(parsed) ? parsed : null;
   }
 
   /**
@@ -1644,9 +1527,9 @@ export function createAppShell(app: HTMLElement): void {
     viewportTitle.classList.add('is-hidden');
     viewportTitle.innerHTML = '';
     viewport.pause();
+    viewport.clearSource();
     runAudio.pause();
     viewport.clearPrewarmedSources();
-    viewport.resetPlayback();
     timeline.setPosition(0);
     clearActiveRunAudio();
   }
@@ -1658,9 +1541,7 @@ export function createAppShell(app: HTMLElement): void {
       return;
     }
 
-    const knownRunIds = activeGalleryRuns
-      .filter((run) => run.simulationId === activeClass.id)
-      .map((run) => run.runId);
+    const knownRunIds = getKnownGalleryRunIds();
 
     if (knownRunIds.length === 0) {
       return;
@@ -1671,6 +1552,25 @@ export function createAppShell(app: HTMLElement): void {
     if (galleryOverlay.isVisible()) {
       galleryOverlay.update(activeClass, buildGalleryScene(activeClass, activeGalleryRuns), litRunIds);
     }
+  }
+
+  async function ensureActiveGalleryRunsLoaded(): Promise<void> {
+    if (activeGalleryRunsClassId === activeClass.id) {
+      return;
+    }
+
+    activeGalleryRuns = await manifestController.listRuns(activeClass.id);
+    activeGalleryRunIds = activeGalleryRuns.map((run) => run.runId);
+    activeGalleryRunIdsClassId = activeClass.id;
+    activeGalleryRunsClassId = activeClass.id;
+  }
+
+  function getKnownGalleryRunIds(): string[] {
+    if (activeGalleryRunIdsClassId === activeClass.id) {
+      return activeGalleryRunIds;
+    }
+
+    return [];
   }
 
   /**

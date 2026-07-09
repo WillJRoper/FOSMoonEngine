@@ -2,6 +2,7 @@ import {
   fetchWithOnlineAssetFallback,
   resolveOnlineAssetUrl,
 } from '../shared/online-assets.ts';
+import { withQueryParam } from '../shared/urls.ts';
 
 /**
  * Viewport — full-page background layer for simulation media.
@@ -15,9 +16,12 @@ import {
  * the active video's initial buffer.
  *
  *   • The active video uses `preload="auto"` so the browser can fetch ahead.
- *   • `prewarmSources()` runs detached `<video>` preloading for likely-next
- *     views after the active video is revealed.
- *   • `clearPrewarmedSources()` tears down detached preloaders when the run changes,
+ *   • `prewarmSources()` runs detached `<video>` preloading + full-Blob
+ *     fetches for likely-next views *after* the active video is revealed.
+ *   • `setSource()` silently substitutes a primed Blob URL for the remote
+ *     URL, so the caller (app-shell) can stay simple and never worry about
+ *     whether the video is local or remote.
+ *   • `clearPrewarmedSources()` revokes everything when the run changes,
  *     keeping memory and object-URL references clean.
  */
 
@@ -152,6 +156,8 @@ export function createViewport(
   let wantedPrewarmSources = new Set<string>();
   let prewarmingSuspended = false;
   const prewarmedVideos = new Map<string, HTMLVideoElement>();
+  const prewarmedBlobUrls = new Map<string, string>();
+  const prewarmFetchControllers = new Map<string, AbortController>();
   let ownedObjectUrl: string | null = null;
   let lastFrameDataUrl: string | null = null;
   const frameCaptureCanvas = document.createElement('canvas');
@@ -193,6 +199,15 @@ export function createViewport(
   }
 
   function setSource(src: string, options: ViewportSourceOptions = {}): void {
+    const primedBlobUrl = prewarmedBlobUrls.get(src);
+
+    if (primedBlobUrl) {
+      prewarmedBlobUrls.delete(src);
+      options = { ...options, ownedObjectUrl: true };
+
+      src = primedBlobUrl;
+    }
+
     // Fade out first so swapping sources feels deliberate rather than like a
     // hard cut between two unrelated videos.
     video.classList.add('fade-out');
@@ -462,6 +477,15 @@ export function createViewport(
       prewarmedVideos.delete(src);
     }
 
+    for (const [src, controller] of prewarmFetchControllers.entries()) {
+      if (wantedPrewarmSources.has(src)) {
+        continue;
+      }
+
+      controller.abort();
+      prewarmFetchControllers.delete(src);
+    }
+
     for (const src of wantedPrewarmSources) {
       if (!prewarmedVideos.has(src)) {
         const prewarmedVideo = document.createElement('video');
@@ -474,6 +498,12 @@ export function createViewport(
         prewarmedVideo.load();
         prewarmedVideos.set(src, prewarmedVideo);
       }
+
+      if (prewarmedBlobUrls.has(src) || prewarmFetchControllers.has(src)) {
+        continue;
+      }
+
+      startPrewarmBlobFetch(src);
     }
   }
 
@@ -486,10 +516,58 @@ export function createViewport(
     prewarmedVideos.clear();
   }
 
+  function abortPrewarmFetches(): void {
+    for (const controller of prewarmFetchControllers.values()) {
+      controller.abort();
+    }
+
+    prewarmFetchControllers.clear();
+  }
+
+  function startPrewarmBlobFetch(src: string): void {
+    const controller = new AbortController();
+
+    prewarmFetchControllers.set(src, controller);
+
+    const cacheBustedUrl = withQueryParam(src, '_', `${Date.now()}`);
+
+    void fetchWithOnlineAssetFallback(cacheBustedUrl, { signal: controller.signal })
+      .then(async (response) => {
+        if (!response.ok) {
+          return;
+        }
+
+        const blob = await response.blob();
+
+        if (!wantedPrewarmSources.has(src)) {
+          return;
+        }
+
+        prewarmedBlobUrls.set(src, URL.createObjectURL(blob));
+      })
+      .catch((error) => {
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          return;
+        }
+      })
+      .finally(() => {
+        if (prewarmFetchControllers.get(src) === controller) {
+          prewarmFetchControllers.delete(src);
+        }
+      });
+  }
+
   function clearPrewarmedSources(): void {
     wantedPrewarmSources.clear();
     prewarmingSuspended = false;
     stopDetachedPrewarmedVideos();
+    abortPrewarmFetches();
+
+    for (const blobUrl of prewarmedBlobUrls.values()) {
+      URL.revokeObjectURL(blobUrl);
+    }
+
+    prewarmedBlobUrls.clear();
   }
 
   function storeCurrentFrame(): void {

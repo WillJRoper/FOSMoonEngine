@@ -64,6 +64,7 @@ export interface ManifestController {
   getSource: () => ManifestSource;
   setSource: (source: ManifestSource) => void;
   preloadActiveManifest: () => Promise<void>;
+  listRunIds: (simClassId: string) => Promise<string[]>;
   listRuns: (simClassId: string) => Promise<GalleryManifestRun[]>;
   getRunById: (simClassId: string, runId: string) => Promise<GalleryManifestRun | null>;
   findNearestVideo: (
@@ -116,6 +117,9 @@ export function createManifestController(
     async preloadActiveManifest() {
       await manifestPromise;
     },
+    async listRunIds(simClassId) {
+      return listManifestRunIds(manifestPromise, simClassId);
+    },
     async listRuns(simClassId) {
       return listManifestRuns(manifestPromise, simClassId);
     },
@@ -150,6 +154,18 @@ export function createManifestController(
       };
     },
   };
+}
+
+async function listManifestRunIds(
+  manifestPromise: Promise<RunManifest>,
+  simClassId: string,
+): Promise<string[]> {
+  const manifest = await manifestPromise;
+
+  return manifest.runs
+    .filter((entry) => entry.simulationId === simClassId)
+    .map((entry) => entry.runId)
+    .filter((runId) => runId.length > 0);
 }
 
 async function listManifestRuns(
