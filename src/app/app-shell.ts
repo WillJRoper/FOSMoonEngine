@@ -137,6 +137,7 @@ export function createAppShell(app: HTMLElement): void {
   // Track whether the currently loaded video has reached the end — we need this
   // to know if we should re-show the summary overlay.
   let hasCompletedPlayback = false;
+  let summaryReplayFromStart = false;
   let activeCompletedRunToken = 0;
 
   // Sidecar run metadata for the currently loaded video (wallclock, compute, etc).
@@ -632,20 +633,10 @@ export function createAppShell(app: HTMLElement): void {
   // When playback ends, remember that state and show the summary overlay.
   viewport.onEnded(() => {
     hasCompletedPlayback = true;
+    summaryReplayFromStart = true;
     activeCompletedRunToken += 1;
     updateGalleryProgressForCompletedRun();
-    const thumbnail = viewport.captureFrame();
-
-    summaryOverlay.update(
-      activeClass,
-      getActiveValues(),
-      viewport.getDurationSeconds(),
-      activeRunMetadata,
-      thumbnail,
-      activeCompletedRunToken,
-    );
-    summaryOverlay.show();
-    syncRunAudioPlayback();
+    showActiveSummaryOverlay();
   });
 
   // Mount the main selection overlay — parameters, settings, credits, etc.
@@ -1034,11 +1025,13 @@ export function createAppShell(app: HTMLElement): void {
   function handleReplay(): void {
     hideGalleryOverlay();
     hasCompletedPlayback = false;
+    const shouldRestartFromBeginning =
+      summaryReplayFromStart || viewport.getPlaybackFraction() >= 0.999;
+
+    summaryReplayFromStart = false;
     summaryOverlay.hide();
 
-    const atEnd = viewport.getPlaybackFraction() >= 0.999;
-
-    if (atEnd) {
+    if (shouldRestartFromBeginning) {
       viewport.resetPlayback();
       syncAudioToViewport({ force: true });
     }
@@ -1054,20 +1047,9 @@ export function createAppShell(app: HTMLElement): void {
    */
   function handleShowSummary(): void {
     hasCompletedPlayback = true;
+    summaryReplayFromStart = false;
     activeCompletedRunToken += 1;
-    viewport.pause();
-    const thumbnail = activeRunMetadata ? viewport.captureFrame() : null;
-
-    summaryOverlay.update(
-      activeClass,
-      getActiveValues(),
-      viewport.getDurationSeconds(),
-      activeRunMetadata,
-      thumbnail,
-      activeCompletedRunToken,
-    );
-    summaryOverlay.show();
-    syncRunAudioPlayback();
+    showActiveSummaryOverlay();
   }
 
   /**
@@ -1261,17 +1243,7 @@ export function createAppShell(app: HTMLElement): void {
     if (restoreConfigAfterGalleryClose) {
       setMode('config');
     } else if (restoreSummaryAfterGalleryClose && hasCompletedPlayback) {
-      const thumbnail = viewport.captureFrame();
-
-      summaryOverlay.update(
-        activeClass,
-        getActiveValues(),
-        viewport.getDurationSeconds(),
-        activeRunMetadata,
-        thumbnail,
-        activeCompletedRunToken,
-      );
-      summaryOverlay.show();
+      showActiveSummaryOverlay();
     } else if (hasCompletedInitialization) {
       viewport.showMedia();
 
@@ -1396,17 +1368,7 @@ export function createAppShell(app: HTMLElement): void {
       viewportTitle.classList.add('is-hidden');
       viewportTitle.innerHTML = '';
     } else if (hasCompletedPlayback) {
-      const thumbnail = viewport.captureFrame();
-
-      summaryOverlay.update(
-        activeClass,
-        getActiveValues(),
-        viewport.getDurationSeconds(),
-        activeRunMetadata,
-        thumbnail,
-        activeCompletedRunToken,
-      );
-      summaryOverlay.show();
+      showActiveSummaryOverlay();
     } else {
       refreshViewSwitcher();
     }
@@ -1505,6 +1467,7 @@ export function createAppShell(app: HTMLElement): void {
 
     activeLiveStatsFrames = EMPTY_LIVE_STATS_DATASET;
     hasCompletedPlayback = false;
+    summaryReplayFromStart = false;
     activeRunMetadata = null;
     activeRunMatch = null;
     resumePlaybackAfterGalleryClose = false;
@@ -1571,6 +1534,23 @@ export function createAppShell(app: HTMLElement): void {
     }
 
     return [];
+  }
+
+  function showActiveSummaryOverlay(): void {
+    viewport.pause();
+
+    const thumbnail = viewport.captureFrame();
+
+    summaryOverlay.update(
+      activeClass,
+      getActiveValues(),
+      viewport.getDurationSeconds(),
+      activeRunMetadata,
+      thumbnail,
+      activeCompletedRunToken,
+    );
+    summaryOverlay.show();
+    syncRunAudioPlayback();
   }
 
   /**

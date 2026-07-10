@@ -2742,13 +2742,16 @@ button {
   justify-content: center;
   width: 1.7rem;
   height: 1.7rem;
-  font-family: var(--font-mono);
-  font-size: 1.2rem;
-  line-height: 1;
   color: #4b5f72;
   border-radius: 50%;
   transition: color 0.15s ease;
   flex-shrink: 0;
+}
+
+.param-card__info-btn svg {
+  width: 1.2rem;
+  height: 1.2rem;
+  display: block;
 }
 
 .res-card--has-info:hover .param-card__info-btn {

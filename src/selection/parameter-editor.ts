@@ -243,7 +243,7 @@ export function createParameterEditor(
 
       infoBtn.className = 'param-card__info-btn';
       infoBtn.setAttribute('aria-label', 'Parameter description');
-      infoBtn.textContent = '\u24D8';
+      infoBtn.innerHTML = createInfoSvg();
       header.appendChild(infoBtn);
 
       card.addEventListener('click', () => {
@@ -275,6 +275,16 @@ export function createParameterEditor(
       return { ...values };
     },
   };
+}
+
+function createInfoSvg(): string {
+  return `
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+      <circle cx="12" cy="12" r="9"></circle>
+      <path d="M12 10.4v5.1"></path>
+      <circle cx="12" cy="7.7" r="0.9" fill="currentColor" stroke="none"></circle>
+    </svg>
+  `;
 }
 
 function createFallbackValues(simClass: SimulationClass): Record<string, number> {
