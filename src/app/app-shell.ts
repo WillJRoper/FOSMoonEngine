@@ -1030,6 +1030,7 @@ export function createAppShell(app: HTMLElement): void {
 
     summaryReplayFromStart = false;
     summaryOverlay.hide();
+    viewport.showMedia();
 
     if (shouldRestartFromBeginning) {
       viewport.resetPlayback();
